@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { predictFromForm } from '../services/api'
+import './FormInput.css';
 
 const initialForm = {
   age: '',
