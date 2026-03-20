@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { predictFromText } from '../services/api'
+import './Chatinput.css';
 
 const EXAMPLES = [
   'Mujer de 72 años con insuficiencia cardíaca, diabetes tipo 2 y presión arterial de 160/90. Creatinina 1.8 mg/dL.',
