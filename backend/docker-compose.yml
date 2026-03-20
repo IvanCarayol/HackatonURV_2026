@@ -1,0 +1,35 @@
+services:
+  # Orquestador: Interfaz REST principal y LLM client
+  orchestrator:
+    build: 
+      context: ./orchestrator-api
+      dockerfile: Dockerfile
+    container_name: clinical-orchestrator
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_BASE_URL=http://ollama:11434/v1
+      - LLM_MODEL_NAME=mistral
+      - DECISION_TREE_URL=http://model-service:8001/predict
+    depends_on:
+      - ollama
+      - model-service
+
+  # LLM Engine: Ollama
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-engine
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # Modelo: Inferencia del Árbol de Decisión
+  model-service:
+    build:
+      context: ./model-service
+      dockerfile: Dockerfile
+    container_name: clinical-model
+    ports:
+      - "8001:8001"
+
+volumes:
+  ollama_data:
