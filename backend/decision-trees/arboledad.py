@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from catboost import CatBoostClassifier
 import optuna
@@ -6,10 +7,14 @@ from sklearn.metrics import classification_report, roc_auc_score, confusion_matr
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Configurar rutas relativas al script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "Database")
+
 print("1. Cargando y fusionando datos de mortalidad...")
-cohort = pd.read_csv("hackato_cohort.csv")
-diagnostics = pd.read_csv("hackato_diagnostics.csv")
-farmacs = pd.read_csv("hackato_farmacs.csv")
+cohort = pd.read_csv(os.path.join(DATA_DIR, "hackato_cohort.csv"))
+diagnostics = pd.read_csv(os.path.join(DATA_DIR, "hackato_diagnostics.csv"))
+farmacs = pd.read_csv(os.path.join(DATA_DIR, "hackato_farmacs.csv"))
 
 df_maestro = cohort.merge(diagnostics, on="id_pacient", how="left")
 df_maestro = df_maestro.merge(farmacs, on="id_pacient", how="left")

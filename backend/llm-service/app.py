@@ -1,20 +1,28 @@
 import os
 import json
 import logging
+import sys
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from ollama import Client
+
+# Añadir la carpeta de decision-trees al path para poder importar el engine
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "decision-trees"))
+from decision_trees_engine import DecisionTreesEngine, map_llm_json_to_engine
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Medical LLM Service", description="Mistral-7B via Ollama for medical extraction")
+app = FastAPI(title="Medical LLM Service", description="Mistral-7B via Ollama + Decision Trees")
 
 # Configuration
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama-server:11434")
 MODEL_NAME = "mistral:7b"
 client = Client(host=OLLAMA_HOST)
+
+# Motor de Árboles de Decisión
+tree_engine = DecisionTreesEngine()
 
 # JSON Schema for extraction
 json_template = {
@@ -29,72 +37,162 @@ json_template = {
 }
 
 @app.on_event("startup")
-async def check_ollama_connection():
+async def startup_event():
+    # 1. Verificar conexión con Ollama y modelo
     try:
         logger.info(f"Connecting to Ollama at {OLLAMA_HOST}...")
-        # Check if model exists, if not pull it
         models = client.list()
         model_exists = any(m['name'].startswith(MODEL_NAME) for m in models.get('models', []))
-        
         if not model_exists:
-            logger.info(f"Model {MODEL_NAME} not found. Pulling it (this may take a while)...")
+            logger.info(f"Model {MODEL_NAME} not found. Pulling it...")
             client.pull(MODEL_NAME)
-            logger.info(f"Model {MODEL_NAME} pulled successfully.")
-        else:
-            logger.info(f"Model {MODEL_NAME} already available in Ollama.")
+        logger.info(f"Ollama ready with model {MODEL_NAME}.")
     except Exception as e:
-        logger.error(f"Failed to connect to Ollama or pull model: {str(e)}")
-        # We don't raise an exception here because the server should still start, 
-        # but endpoints will fail later if not fixed.
+        logger.error(f"Ollama connection error: {str(e)}")
+
+    # 2. Entrenar motores de decisión
+    try:
+        logger.info("Training Decision Trees Engine...")
+        tree_engine.load_and_train()
+        logger.info("Decision Trees Engine ready.")
+    except Exception as e:
+        logger.error(f"Decision Trees training error: {str(e)}")
 
 class ExtractionRequest(BaseModel):
     text: str
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "ollama_host": OLLAMA_HOST, "model": MODEL_NAME}
+    return {
+        "status": "ok", 
+        "ollama_host": OLLAMA_HOST, 
+        "model": MODEL_NAME,
+        "trees_engine_ready": tree_engine.is_trained
+    }
 
-@app.post("/extract")
-async def extract_medical_data(request: ExtractionRequest):
+async def run_extraction(text: str):
+    """Lógica interna de extracción via Ollama"""
     prompt = f"""<s>[INST] Eres un extractor de datos médicos profesional. 
     Analiza el texto y devuelve exclusivamente un objeto JSON con estos campos:
     {list(json_template.keys())}
     
     Si no conoces un valor numérico, pon 0. Si no conoces un texto, pon "No indicado".
     
-    Texto a analizar: {request.text} [/INST]</s>"""
+    Texto a analizar: {text} [/INST]</s>"""
+    
+    response = client.generate(model=MODEL_NAME, prompt=prompt, options={"temperature": 0.1, "num_predict": 800})
+    raw_output = response['response']
+    
+    json_start = raw_output.find('{')
+    json_end = raw_output.rfind('}') + 1
+    
+    if json_start != -1 and json_end != -1:
+        json_str = raw_output[json_start:json_end]
+        return json.loads(json_str)
+    return None
+
+@app.post("/extract")
+async def extract_only(request: ExtractionRequest):
+    result = await run_extraction(request.text)
+    if result: return result
+    raise HTTPException(status_code=500, detail="Could not extract JSON from LLM response")
+
+async def run_report_generation(prediction_data: dict, medical_data: dict):
+    """
+    Genera un informe narrativo profesional basado en las predicciones.
+    """
+    # Preparar el contexto para el reporte
+    context = f"""
+    DATOS CLÍNICOS:
+    - Sexo: {medical_data.get('Sexo')}
+    - Edad: {medical_data.get('Edad')}
+    - Diagnósticos: {medical_data.get('Num_Diagnosticos')}
+    - Fármacos: {medical_data.get('Total_Farmacos')}
+    
+    PREDICCIONES IA:
+    - Riesgo Mortalidad Anual: {prediction_data.get('mortalidad_riesgo_anual')}%
+    - Visitas Urgencias Estimadas (Mes): {prediction_data.get('visitas_urgencias_estimadas_mes')}
+    - Probabilidad Perfil PCC: {prediction_data.get('probabilidad_perfil_pcc')}%
+    """
+    
+    prompt = f"""<s>[INST] Eres un Doctor experto en geriatría especializado en pacientes crónicos complejos.
+    Analiza estos datos y escribe un resumen clínico breve (una frase o dos) y profesional. 
+    Dime si el riesgo es bajo, medio o alto y qué acción recomiendas (Atención Primaria, Urgencias, etc.).
+    
+    Datos:
+    {context} [/INST]</s>"""
     
     try:
-        response = client.generate(
-            model=MODEL_NAME,
-            prompt=prompt,
-            options={
-                "temperature": 0.1,
-                "num_predict": 800,
-            }
-        )
-        
-        raw_output = response['response']
-        logger.info(f"Raw output: {raw_output}")
-        
-        # Clean response to get only JSON
-        json_start = raw_output.find('{')
-        json_end = raw_output.rfind('}') + 1
-        
-        if json_start != -1 and json_end != -1:
-            json_str = raw_output[json_start:json_end]
-            try:
-                result = json.loads(json_str)
-                return result
-            except json.JSONDecodeError:
-                logger.error(f"Failed to decode JSON from output: {json_str}")
-                return {"error": "Could not format JSON", "raw_output": raw_output}
-        else:
-            return {"error": "No JSON found in response", "raw_output": raw_output}
-            
+        response = client.generate(model=MODEL_NAME, prompt=prompt, options={"temperature": 0.3})
+        return response['response'].strip()
     except Exception as e:
-        logger.error(f"Error during Ollama inference: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Report generation failed: {e}")
+        return "No se pudo generar el informe narrativo."
+
+@app.post("/report")
+async def report_only(prediction_data: dict, medical_data: dict = None):
+    """
+    Endpoint para generar solo el informe narrativo (Segunda fase del flujo encadenado).
+    """
+    return {"report": await run_report_generation(prediction_data, medical_data or {})}
+
+@app.post("/predict")
+async def predict_only(medical_data: dict):
+    """
+    Segunda llamada: Recibe el JSON médico y devuelve las predicciones de los árboles.
+    """
+    if not tree_engine.is_trained:
+        raise HTTPException(status_code=503, detail="Decision trees engine is not yet trained")
+    
+    try:
+        # 1. Mapear a formato de los árboles
+        tree_input = map_llm_json_to_engine(medical_data)
+        # 2. Predicción en paralelo
+        return await tree_engine.predict_async(tree_input)
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+
+@app.post("/analyze")
+async def analyze_full_case(request: ExtractionRequest):
+    """Extracción + Predicción con Árboles"""
+    # 1. Extraer JSON médico
+    extracted_data = await run_extraction(request.text)
+    if not extracted_data:
+        raise HTTPException(status_code=500, detail="LLM Extraction failed")
+
+    # 2. Mapear a formato de los árboles
+    try:
+        tree_input = map_llm_json_to_engine(extracted_data)
+        logger.info(f"Mapped tree input: {tree_input}")
+    except Exception as e:
+        logger.error(f"Mapping error: {e}")
+        raise HTTPException(status_code=500, detail=f"Data mapping failed: {e}")
+
+    # 3. Predicciones
+    if not tree_engine.is_trained:
+        raise HTTPException(status_code=503, detail="Decision trees engine is not yet trained")
+    
+    try:
+        analysis_results = await tree_engine.predict_async(tree_input)
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+
+    # 4. Generar Informe Narrativo (IA Voice)
+    narrative_report = await run_report_generation(analysis_results, extracted_data)
+
+    # 5. Resultado final combinado
+    return {
+        "extracted_medical_data": extracted_data,
+        "predictive_analysis": analysis_results,
+        "narrative_report": narrative_report,
+        "summary": {
+            "is_emergency_risk": analysis_results['visitas_urgencias_estimadas_mes'] > 0.15,
+            "is_mortality_risk": analysis_results['mortalidad_riesgo_anual'] > 40.0,
+            "hidden_chronic_alert": extracted_data.get('Tipo_Cronico') == 'No' and analysis_results['probabilidad_perfil_pcc'] > 60.0
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn

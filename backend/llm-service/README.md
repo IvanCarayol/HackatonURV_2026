@@ -1,75 +1,78 @@
-# Medical LLM Service
+# Medical LLM & Analytics Service
 
-Este servicio proporciona una API REST para la extracción de datos médicos estructurados a partir de texto en lenguaje natural utilizando el modelo **Mistral-7B** a través de **Ollama**.
+Este servicio proporciona una API completa para la extracción de datos médicos y análisis predictivo de pacientes crónicos complejos (PCC/MACA). Combina el poder de **Mistral-7B** con **Árboles de Decisión (CatBoost)**.
 
 ## Arquitectura
 
-- **Motor de Inferencia**: [Ollama](https://ollama.com/) (sirviendo `mistral:7b`)
-- **API Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.10)
-- **Contenerización**: Docker Compose con soporte para GPU NVIDIA.
-
-## Requisitos Previos
-
-- Docker y Docker Compose installed.
-- NVIDIA Container Toolkit (opcional, para aceleración por GPU).
+- **Motor de Inferencia LLM**: [Ollama](https://ollama.com/) (sirviendo `mistral:7b`)
+- **Motor de Predicción**: 3 Árboles de Decisión entrenados en paralelo (Mortalidad, Demanda de Urgencias, Perfil PCC).
+- **API Framework**: FastAPI (Python 3.10)
+- **Aceleración**: Soporte para GPU NVIDIA via Docker.
 
 ## Instalación y Despliegue
 
-Desde la carpeta `backend/`, ejecuta:
-
 ```bash
+cd backend
 docker-compose up --build
 ```
 
-> **Nota:** La primera vez que se inicie, el servicio descargará automáticamente el modelo `mistral` (aprox. 4.1GB). Esto puede tardar varios minutos dependiendo de tu conexión a internet.
+Al arrancar, el sistema descargará el modelo y entrenará los árboles automáticamente. Sabrás que está listo cuando el log muestre: `✅ [Engine] Todos los modelos entrenados en paralelo y listos.`
 
-## Endpoints de la API
+---
+
+## Flujos de Trabajo (API Endpoints)
 
 El servicio está disponible en `http://localhost:8001`.
 
-### 1. Health Check
-Verifica que la conexión con el servidor Ollama y el modelo estén activos.
+### FLUJO A: Análisis en un solo paso (`One-Shot`)
 
-- **URL:** `/health`
-- **Método:** `GET`
-- **Respuesta Exitosa:**
-  ```json
-  {
-    "status": "ok",
-    "ollama_host": "http://ollama-server:11434",
-    "model": "mistral:7b"
-  }
-  ```
+Ideal para automatización rápida.
+- **Endpoint**: `POST /analyze`
+- **Body**: `{"text": "..."}`
+- **Respuesta**: JSON con datos extraídos, predicciones de riesgo, alertas y un **informe narrativo** generado por la IA.
 
-### 2. Extracción de Datos Médicos
-Analiza un texto médico y devuelve un objeto JSON estructurado.
+### FLUJO B: Análisis Modular (Encadenado)
 
-- **URL:** `/extract`
-- **Método:** `POST`
-- **Cuerpo de la Petición:**
-  ```json
-  {
-    "text": "Paciente varón de 82 años. Es paciente crónico tipo MACA. Se le han realizado 12 diagnósticos en total."
-  }
-  ```
-- **Respuesta Exitosa (JSON):**
-  El servicio devolverá un objeto con los siguientes campos mapeados:
-  - `Sexo`, `Edad`, `Paciente_Cronico`, `Tipo_Cronico`
-  - `Num_Diagnosticos`, `Total_Farmacos`, `Visitas_Atencion_Primaria`
-  - `Visitas_Urgencias`, `Ingresos_Hospitalarios`
-  - Desglose por sistemas (Cardiovascular, Nervioso, Respiratorio, etc.)
+Ideal si quieres que un humano valide el JSON antes de predecir.
 
-## Ejemplo de Uso (cURL)
+**1. Extracción (Paso 1)**
+- **Endpoint**: `POST /extract`
+- **Body**: `{"text": "..."}`
+- **Respuesta**: JSON con variables médicas (Edad, Sexo, Medicamentos...).
 
+**2. Predicción y Reporte (Paso 2)**
+- **Endpoint**: `POST /predict`: Devuelve solo los % de riesgo.
+- **Endpoint**: `POST /report`: Genera el informe escrito profesional.
+- **Body**: JSON obtenido en el paso 1.
+
+---
+
+## Detalle de los Endpoints Principales
+
+### 1. `POST /analyze` (Análisis Completo)
 ```bash
-curl -X POST http://localhost:8001/extract \
+curl -X POST http://localhost:8001/analyze \
      -H "Content-Type: application/json" \
-     -d '{"text": "Paciente mujer de 45 años con diabetes crónica. Toma 3 fármacos para el sistema digestivo."}'
+     -d '{"text": "Paciente varón de 85 años, 10 fármacos, MACA."}'
 ```
+**Respuesta:**
+- `extracted_medical_data`: Datos clínicos procesados.
+- `predictive_analysis`: Mortalidad (%), Visitas (Mes), Perfil PCC (%).
+- `narrative_report`: Resumen clínico redactado por el Dr. Inteligencia Artificial.
+- `summary`: Flags rápidos (Riesgo Alto/Bajo).
 
-## Configuración del Entorno
+### 2. `POST /predict` (Solo Inteligencia de Riesgo)
+Recibe el JSON médico y devuelve las probabilidades calculadas por los árboles de decisión entrenados.
 
-Las siguientes variables de entorno se pueden configurar en el `docker-compose.yaml`:
+### 3. `POST /report` (Informe narrativo)
+Envía las predicciones y diagnósticos para obtener una explicación en lenguaje natural apta para médicos y enfermería.
 
-- `OLLAMA_HOST`: Dirección del servidor Ollama (por defecto `http://ollama-server:11434`).
-- `MODEL_NAME`: Nombre del modelo a utilizar (por defecto `mistral:7b`).
+### 4. `GET /health`
+Verifica el estado de Ollama y si los árboles de decisión están ya cargados en memoria.
+
+---
+
+## Configuración Técnica
+- Puerto: `8001` (Interno `8000`)
+- Modelos CatBoost: Ejecución en paralelo mediante `asyncio.to_thread`.
+- Limpieza: Configurado para no generar basura (`catboost_info`) en el disco.

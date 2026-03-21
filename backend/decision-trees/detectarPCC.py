@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from catboost import CatBoostClassifier
 import optuna
@@ -5,14 +6,18 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_auc_score
 import numpy as np
 
+# Configurar rutas relativas al script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "Database")
+
 print("1. Cargando el historial clínico completo de todos los pacientes...")
 
-cohort = pd.read_csv("hackato_cohort.csv")
-diagnostics = pd.read_csv("hackato_diagnostics.csv")
-farmacs = pd.read_csv("hackato_farmacs.csv")
-urgencies = pd.read_csv("hackato_visites_urgencies.csv")
-visites_hospital = pd.read_csv("hackato_visites_hospital.csv")
-visites_primaria = pd.read_csv("hackato_visites_primaria.csv")
+cohort = pd.read_csv(os.path.join(DATA_DIR, "hackato_cohort.csv"))
+diagnostics = pd.read_csv(os.path.join(DATA_DIR, "hackato_diagnostics.csv"))
+farmacs = pd.read_csv(os.path.join(DATA_DIR, "hackato_farmacs.csv"))
+urgencies = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_urgencies.csv"))
+visites_hospital = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_hospital.csv"))
+visites_primaria = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_primaria.csv"))
 
 # ==========================================
 # FASE 1: PERFIL CLÍNICO TOTAL

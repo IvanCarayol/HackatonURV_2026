@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from catboost import CatBoostRegressor
 import optuna
@@ -5,13 +6,17 @@ from sklearn.model_selection import KFold, train_test_split
 from sklearn.metrics import mean_absolute_error
 import numpy as np
 
+# Configurar rutas relativas al script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "Database")
+
 print("1. Cargando datos para el Modelo de Previsión de Demanda...")
-cohort = pd.read_csv("hackato_cohort.csv")
-diagnostics = pd.read_csv("hackato_diagnostics.csv")
-farmacs = pd.read_csv("hackato_farmacs.csv")
-urgencies = pd.read_csv("hackato_visites_urgencies.csv")
-visites_hospital = pd.read_csv("hackato_visites_hospital.csv")
-visites_primaria = pd.read_csv("hackato_visites_primaria.csv")
+cohort = pd.read_csv(os.path.join(DATA_DIR, "hackato_cohort.csv"))
+diagnostics = pd.read_csv(os.path.join(DATA_DIR, "hackato_diagnostics.csv"))
+farmacs = pd.read_csv(os.path.join(DATA_DIR, "hackato_farmacs.csv"))
+urgencies = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_urgencies.csv"))
+visites_hospital = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_hospital.csv"))
+visites_primaria = pd.read_csv(os.path.join(DATA_DIR, "hackato_visites_primaria.csv"))
 
 # ==========================================
 # FASE 1: FILTRADO DE PACIENTES (PCC y MACA)
