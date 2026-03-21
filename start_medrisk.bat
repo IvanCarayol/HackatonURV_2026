@@ -1,38 +1,78 @@
 @echo off
-setlocal
-title MedRisk Pro Orchestrator
+setlocal enabledelayedexpansion
+
+:: --- MedRisk Pro Orchestrator for Windows ---
+:: Este script realiza todas las comprobaciones e instala dependencias si es necesario.
+
+title MedRisk Pro - Lanzador Universal
+
 echo ------------------------------------------------------------------
-echo      🚀 MedRisk Pro - Lanzador de Sistema Integrado
+echo      MedRisk Pro - Preparando Ambiente de Ejecucion
 echo ------------------------------------------------------------------
 
-:: Navegar al directorio raíz del proyecto
-cd /d %~dp0
-
-:: Comprobar existencia de venv
-if not exist ".venv\Scripts\python.exe" (
-    echo ⚠️  Error: No se ha detectado el entorno virtual .venv en la raiz.
-    echo Asegurese de haber ejecutado la instalacion previa.
+:: 1. Comprobar Python
+where python >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Python no detectado. Por favor, instale Python 3.
     pause
     exit /b
 )
 
-:: Iniciar Backend en una nueva ventana
-echo  Arrancando Backend en puerto 8080...
-start "MedRisk Backend" cmd /k "color 0B && cd backend\llm-service && ..\..\.venv\Scripts\python.exe app.py"
+:: 2. Comprobar Node.js
+where npm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js/NPM no detectado. Por favor, instale Node.js.
+    pause
+    exit /b
+)
 
-:: Esperar un momento para el backend
-timeout /t 5 /nobreak > nul
+:: 3. Configurar Entorno Virtual (Backend)
+if not exist ".venv" (
+    echo [INFO] Creando entorno virtual .venv...
+    python -m venv .venv
+    if !errorlevel! neq 0 (
+        echo [ERROR] Fallo al crear el entorno virtual.
+        pause
+        exit /b
+    )
+)
 
-:: Iniciar Frontend en una nueva ventana
-echo Arrancando Frontend (Vite UI)...
-start "MedRisk Frontend" cmd /k "color 0E && cd frontend && npm run dev"
+echo [INFO] Asegurando dependencias del Backend...
+call .venv\Scripts\activate
+python -m pip install --upgrade pip >nul
+pip install -r backend/llm-service/requirements.txt >nul
+if !errorlevel! neq 0 (
+    echo [ERROR] Fallo al instalar dependencias del Backend.
+    pause
+    exit /b
+)
+
+:: 4. Configurar Frontend
+if not exist "frontend\node_modules" (
+    echo [INFO] Instalando dependencias del Frontend (npm install)...
+    cd frontend
+    call npm install
+    if !errorlevel! neq 0 (
+        echo [ERROR] Fallo al instalar dependencias del Frontend.
+        pause
+        exit /b
+    )
+    cd ..
+)
+
+echo ------------------------------------------------------------------
+echo      SISTEMA LISTO. Lanzando componentes...
+echo ------------------------------------------------------------------
+
+:: Lanzar Backend en nueva ventana
+start "MedRisk Backend" cmd /k "call .venv\Scripts\activate && cd backend\llm-service && python app.py"
+
+:: Lanzar Frontend en nueva ventana
+start "MedRisk Frontend" cmd /k "cd frontend && npm run dev"
 
 echo.
-echo Los sistemas estan siendo lanzados en ventanas independientes.
+echo [OK] MedRisk Pro se esta ejecutando.
+echo      Frontend: http://localhost:5173
+echo      Backend:  http://localhost:8080
 echo.
-echo [!] Info de Acceso:
-echo - Frontend: http://localhost:5173 (o puerto indicado por Vite)
-echo - Backend:  http://localhost:8080
-echo.
-echo Presione cualquier tecla para cerrar este lanzador (los servicios seguiran abiertos).
-pause > nul
+pause
