@@ -35,6 +35,39 @@ AUTH_DIR = os.path.join(os.path.dirname(__file__), "auth")
 USERS_CSV = os.path.join(AUTH_DIR, "users.csv")
 PASSWORDS_CSV = os.path.join(AUTH_DIR, "passwords.csv")
 
+DATABASE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "database")
+QUERIED_CSV = os.path.join(DATABASE_DIR, "queried_patients.csv")
+
+def save_patient_data(mapped_data: dict):
+    """Guarda los datos mapeados en un CSV con ID autoincremental y campos de auditoría."""
+    try:
+        os.makedirs(DATABASE_DIR, exist_ok=True)
+        file_exists = os.path.isfile(QUERIED_CSV)
+        
+        # 1. Determinar el siguiente ID contando filas
+        next_id = 1
+        if file_exists:
+            with open(QUERIED_CSV, mode='r', encoding='utf-8') as f:
+                next_id = sum(1 for line in f) # Cuenta cabecera + filas
+        
+        # 2. Preparar el registro completo
+        full_record = {"id": next_id}
+        full_record.update(mapped_data)
+        full_record.update({
+            "tratado_auditor": 0,
+            "tratado_previsor": 0,
+            "tratado_risc": 0
+        })
+
+        with open(QUERIED_CSV, mode='a', encoding='utf-8', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=full_record.keys())
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(full_record)
+        logger.info(f"💾 Registro #{next_id} guardado con éxito en {QUERIED_CSV}")
+    except Exception as e:
+        logger.error(f"❌ Error al guardar datos en CSV: {e}")
+
 # Configuration
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 MODEL_NAME = "mistral:7b"
@@ -243,7 +276,9 @@ async def predict_only(medical_data: dict):
     try:
         # 1. Mapear a formato de los árboles
         tree_input = map_llm_json_to_engine(medical_data)
-        # 2. Predicción en paralelo
+        # 2. Guardar en histórico CSV
+        save_patient_data(tree_input)
+        # 3. Predicción en paralelo
         return await tree_engine.predict_async(tree_input)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
@@ -260,6 +295,7 @@ async def analyze_full_case(request: ExtractionRequest):
     # 2. Mapear a formato de los árboles
     try:
         tree_input = map_llm_json_to_engine(extracted_data)
+        save_patient_data(tree_input)
         logger.info(f"Mapped tree input: {tree_input}")
     except Exception as e:
         logger.error(f"Mapping error: {e}")
