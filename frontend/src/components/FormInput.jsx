@@ -104,24 +104,32 @@ export default function FormInput({ onResult }) {
     <form className="form-panel" onSubmit={handleSubmit}>
 
       <div className="form-section">
-        <h3>Datos Personales</h3>
+        <h3>Datos Personales e Inclusión</h3>
         <div className="form-row">
-          <div className="field field--wide">
-            <label>¿Cuál es su sexo y qué edad tiene?</label>
-          </div>
           <div className="field">
+            <label>Sexo Biológico / Identidad</label>
             <select name="sexo" value={form.sexo} onChange={handleChange}>
               <option value="M">Hombre</option>
               <option value="F">Mujer</option>
-              <option value="NS">Prefiero no decirlo</option>
+              <option value="NB">No Binario / Otros</option>
+              <option value="NS">Prefiero no decir</option>
             </select>
           </div>
           <div className="field">
+            <label>Edad</label>
             <input
               type="number" name="edad" min="0" max="120"
               placeholder="Edad (Obligatorio)" value={form.edad}
               onChange={handleChange} required
             />
+          </div>
+          <div className="field field--wide">
+            <label>Situación Social (Inclusión)</label>
+            <select name="apoyo_social" value={form.apoyo_social || 'si'} onChange={handleChange}>
+              <option value="si">Cuenta con apoyo familiar/social</option>
+              <option value="vulnerable">Vive solo / Riesgo de aislamiento</option>
+              <option value="dependiente">Dependencia grado II o III</option>
+            </select>
           </div>
         </div>
       </div>
