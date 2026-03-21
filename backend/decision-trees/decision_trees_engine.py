@@ -54,7 +54,7 @@ class DecisionTreesEngine:
         y_m = df_mort['TARGET']
         
         # allow_writing_files=False para evitar catboost_info
-        self.models['mortalidad'] = CatBoostClassifier(iterations=200, depth=6, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat', 'cronic'])
+        self.models['mortalidad'] = CatBoostClassifier(iterations=20, depth=6, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat', 'cronic'])
         self.models['mortalidad'].fit(X_m, y_m)
         self.feature_columns['mortalidad'] = X_m.columns.tolist()
 
@@ -65,7 +65,7 @@ class DecisionTreesEngine:
         X_v = df_vis.drop(columns=['id_pacient', 'situacio', 'total_urg'])
         y_v = df_vis['total_urg']
         
-        self.models['visitas'] = CatBoostRegressor(iterations=200, depth=5, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat', 'cronic'])
+        self.models['visitas'] = CatBoostRegressor(iterations=20, depth=5, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat', 'cronic'])
         self.models['visitas'].fit(X_v, y_v)
         self.feature_columns['visitas'] = X_v.columns.tolist()
 
@@ -77,7 +77,7 @@ class DecisionTreesEngine:
         X_p = df_pcc.drop(columns=['id_pacient', 'situacio', 'cronic', 'TARGET'])
         y_p = df_pcc['TARGET']
         
-        self.models['pcc'] = CatBoostClassifier(iterations=200, depth=6, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat'])
+        self.models['pcc'] = CatBoostClassifier(iterations=20, depth=6, learning_rate=0.1, verbose=0, allow_writing_files=False, cat_features=['sexe', 'grup_edat'])
         self.models['pcc'].fit(X_p, y_p)
         self.feature_columns['pcc'] = X_p.columns.tolist()
 
@@ -149,10 +149,10 @@ def clean_int(val):
             return 1 # Si hay texto descriptivo, es que hay al menos 1 problema
     return 0
 
-def map_llm_json_to_engine(llm_data):
+def map_llm_json_to_engine(data):
     """
-    Traduce el JSON del LLM al formato que esperan los árboles, 
-    limpiando tipos de datos inesperados.
+    Traduce el JSON (ya sea del LLM o del formulario web) al formato 
+    esperado por los árboles de decisión.
     """
     def get_grup_edat(edad_input):
         try:
@@ -162,30 +162,40 @@ def map_llm_json_to_engine(llm_data):
             return f"{low}-{low+4}"
         except: return "Desconegut"
 
+    def get_val(key_list, default=0):
+        for k in key_list:
+            if k in data and data[k] is not None:
+                return data[k]
+        return default
+
+    # Sexo: Form (M/F) o LLM (Varón/Mujer)
+    sexo_val = str(get_val(["Sexo", "sexo"], "H")).lower()
+    sexe = "H" if sexo_val in ["varón", "hombre", "h", "varon", "m"] else "D"
+
     mapped = {
-        "sexe": "H" if str(llm_data.get("Sexo", "")).lower() in ["varón", "hombre", "h", "varon"] else "D",
-        "grup_edat": get_grup_edat(llm_data.get("Edad", 0)),
-        "cronic": llm_data.get("Tipo_Cronico", "NO"),
-        "diags_totals": clean_int(llm_data.get("Num_Diagnosticos", 0)),
-        "farmacs_totals": clean_int(llm_data.get("Total_Farmacos", 0)),
-        "problemes_salut_aguts": clean_int(llm_data.get("Problemes_aguts", 0)),
-        "problemes_salut_cronics": clean_int(llm_data.get("Problemes_cronics", 0)),
-        "problemes_salut_neoplasia_maligna": clean_int(llm_data.get("Neoplasia_maligna", 0)),
-        "antiinfecciosos_per_a_us_sistemic": clean_int(llm_data.get("Antiinfecciosos", 0)),
-        "antineoplasics_i_immunomoduladors": clean_int(llm_data.get("Quimioterapia_Inmunosupresores", 0)),
-        "sang_i_organs_hematopoetics": clean_int(llm_data.get("Sang_organs_hematopoetics", 0)),
-        "sistema_cardiovascular": clean_int(llm_data.get("Sistema_cardiovascular", 0)),
-        "sistema_digestiu_i_metabolisme": clean_int(llm_data.get("Sistema_digestiu_metabolisme", 0)),
-        "sistema_musculoesqueletic": clean_int(llm_data.get("Sistema_musculoesqueletic", 0)),
-        "sistema_nervios": clean_int(llm_data.get("Sistema_nervios", 0)),
-        "sistema_respiratori": clean_int(llm_data.get("Sistema_respiratori", 0)),
-        "organs_dels_sentits": clean_int(llm_data.get("Organs_sentits", 0)),
-        "total_prim": clean_int(llm_data.get("Visitas_Atencion_Primaria", 0)),
-        "total_hosp": clean_int(llm_data.get("Ingresos_Hospitalarios", 0))
+        "sexe": sexe,
+        "grup_edat": get_grup_edat(get_val(["Edad", "edad"], 0)),
+        "cronic": str(get_val(["Tipo_Cronico", "tipo_cronico"], "NO")).upper(),
+        "diags_totals": clean_int(get_val(["Num_Diagnosticos", "total_diagnosticos"], 0)),
+        "farmacs_totals": clean_int(get_val(["Total_Farmacos", "total_farmacos"], 0)),
+        "problemes_salut_aguts": clean_int(get_val(["Problemes_aguts", "problemas_agudos"], 0)),
+        "problemes_salut_cronics": clean_int(get_val(["Problemes_cronics", "problemas_cronicos"], 0)),
+        "problemes_salut_neoplasia_maligna": clean_int(get_val(["Neoplasia_maligna", "neoplasia_maligna"], 0)),
+        "antiinfecciosos_per_a_us_sistemic": clean_int(get_val(["Antiinfecciosos", "farmacos_antiinfecciosos"], 0)),
+        "antineoplasics_i_immunomoduladors": clean_int(get_val(["Quimioterapia_Inmunosupresores", "farmacos_quimio"], 0)),
+        "sang_i_organs_hematopoetics": clean_int(get_val(["Sang_organs_hematopoetics", "farmacos_sangre"], 0)),
+        "sistema_cardiovascular": clean_int(get_val(["Sistema_cardiovascular", "farmacos_cardiovascular"], 0)),
+        "sistema_digestiu_i_metabolisme": clean_int(get_val(["Sistema_digestiu_metabolisme", "farmacos_digestivo"], 0)),
+        "sistema_musculoesqueletic": clean_int(get_val(["Sistema_musculoesqueletic", "farmacos_musculoesqueletic"], 0)),
+        "sistema_nervios": clean_int(get_val(["Sistema_nervios", "farmacos_nervios"], 0)),
+        "sistema_respiratori": clean_int(get_val(["Sistema_respiratori", "farmacos_respiratori"], 0)),
+        "organs_dels_sentits": clean_int(get_val(["Organs_sentits", "farmacos_sentits"], 0)),
+        "total_prim": clean_int(get_val(["Visitas_Atencion_Primaria", "visitas_primaria"], 0)),
+        "total_hosp": clean_int(get_val(["Ingresos_Hospitalarios", "hospitalizaciones"], 0))
     }
     
-    # Limpieza de Tipo_Cronico
-    cronic_raw = str(mapped['cronic']).upper()
+    # Limpieza de Cronicidad
+    cronic_raw = mapped['cronic']
     if "PCC" in cronic_raw: mapped['cronic'] = 'PCC'
     elif "MACA" in cronic_raw: mapped['cronic'] = 'MACA'
     else: mapped['cronic'] = 'NO'

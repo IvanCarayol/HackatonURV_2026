@@ -64,13 +64,20 @@ export default function ChatInput({ onResult }) {
             required
           />
           <div className="chat-footer">
-            <span className="char-count">{text.length} caracteres</span>
+            <span className="char-count">Longitud: {text.length}</span>
             <button
               type="submit"
               className="submit-btn submit-btn--inline"
               disabled={loading || !text.trim()}
             >
-              {loading ? 'Analizando...' : 'Analizar →'}
+              {loading ? (
+                'Analizando...'
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '8px'}}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                  Analizar Paciente
+                </>
+              )}
             </button>
           </div>
         </div>

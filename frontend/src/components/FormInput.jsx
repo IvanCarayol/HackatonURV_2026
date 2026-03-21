@@ -153,7 +153,7 @@ export default function FormInput({ onResult }) {
 
       <div className="form-section">
         <h3>Historial de Diagnósticos</h3>
-        <p className="form-hint" style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '-10px' }}>Deje en blanco los campos si no conoce la respuesta exacta.</p>
+        <p className="form-hint">Deje en blanco los campos si no conoce la respuesta exacta.</p>
         <div className="form-row">
           <div className="field field--wide">
             <label>¿Cuántos problemas de salud o enfermedades distintas le ha diagnosticado su médico? (Ej. diabetes, artrosis, asma...)</label>
@@ -232,7 +232,7 @@ export default function FormInput({ onResult }) {
             />
           </div>
 
-          <div className="field field--wide" style={{marginTop: '15px'}}>
+          <div className="field field--wide">
             <label>¿Toma pastillas para la tensión, el corazón, el colesterol, el azúcar (diabetes) o protectores de estómago?</label>
             <select name="toma_cardio_digestivo" value={form.toma_cardio_digestivo} onChange={handleChange}>
               <option value="no_se">No lo sé / No estoy seguro</option>
@@ -253,7 +253,7 @@ export default function FormInput({ onResult }) {
             </>
           )}
 
-          <div className="field field--wide" style={{marginTop: '15px'}}>
+          <div className="field field--wide">
             <label>¿Toma medicación para dolores fuertes, artrosis, relajantes musculares, ansiedad o para dormir?</label>
             <select name="toma_nervios_musculo" value={form.toma_nervios_musculo} onChange={handleChange}>
               <option value="no_se">No lo sé / No estoy seguro</option>
@@ -274,7 +274,7 @@ export default function FormInput({ onResult }) {
             </>
           )}
 
-          <div className="field field--wide" style={{marginTop: '15px'}}>
+          <div className="field field--wide">
             <label>¿Le han recetado algún antibiótico en las últimas semanas?</label>
             <select name="toma_infecciosos" value={form.toma_infecciosos} onChange={handleChange}>
               <option value="no_se">No lo sé / No estoy seguro</option>
@@ -289,7 +289,7 @@ export default function FormInput({ onResult }) {
             </div>
           )}
 
-          <div className="field field--wide" style={{marginTop: '15px'}}>
+          <div className="field field--wide">
             <label>¿Está recibiendo tratamiento de quimioterapia, para problemas graves de la sangre o de defensas?</label>
             <select name="toma_quimio_sangre" value={form.toma_quimio_sangre} onChange={handleChange}>
               <option value="no_se">No lo sé / No estoy seguro</option>
@@ -310,7 +310,7 @@ export default function FormInput({ onResult }) {
             </>
           )}
 
-          <div className="field field--wide" style={{marginTop: '15px'}}>
+          <div className="field field--wide">
             <label>Otros tratamientos (Opcional)</label>
           </div>
           <div className="field">
