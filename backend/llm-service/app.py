@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from ollama import Client
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
+
 # Importación del Motor de Decisiones (Soporte Local y Docker)
 try:
     from decision_trees_engine import DecisionTreesEngine, map_llm_json_to_engine
@@ -21,7 +23,35 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Medical LLM Service", description="Mistral-7B via Ollama + Decision Trees")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Verificar conexión con Ollama y modelo
+    try:
+        logger.info(f"Connecting to Ollama at {OLLAMA_HOST}...")
+        models = client.list()
+        model_exists = any(m.get('model', '').startswith(MODEL_NAME) for m in models.get('models', []))
+        if not model_exists:
+            logger.info(f"Model {MODEL_NAME} not found. Pulling it...")
+            client.pull(MODEL_NAME)
+        logger.info(f"Ollama ready with model {MODEL_NAME}.")
+    except Exception as e:
+        logger.error(f"Ollama connection error: {str(e)}")
+
+    # 2. Entrenar motores de decisión
+    try:
+        logger.info("Training Decision Trees Engine...")
+        tree_engine.load_and_train()
+        logger.info("Decision Trees Engine ready.")
+    except Exception as e:
+        logger.error(f"Decision Trees training error: {str(e)}")
+    
+    yield
+
+app = FastAPI(
+    title="MedRisk Pro API", 
+    description="Mistral-7B via Ollama + Decision Trees",
+    lifespan=lifespan
+)
 
 # Enable CORS for frontend integration
 app.add_middleware(
@@ -88,27 +118,7 @@ json_template = {
     "Organs_sentits": 0
 }
 
-@app.on_event("startup")
-async def startup_event():
-    # 1. Verificar conexión con Ollama y modelo
-    try:
-        logger.info(f"Connecting to Ollama at {OLLAMA_HOST}...")
-        models = client.list()
-        model_exists = any(m.get('model', '').startswith(MODEL_NAME) for m in models.get('models', []))
-        if not model_exists:
-            logger.info(f"Model {MODEL_NAME} not found. Pulling it...")
-            client.pull(MODEL_NAME)
-        logger.info(f"Ollama ready with model {MODEL_NAME}.")
-    except Exception as e:
-        logger.error(f"Ollama connection error: {str(e)}")
-
-    # 2. Entrenar motores de decisión
-    try:
-        logger.info("Training Decision Trees Engine...")
-        tree_engine.load_and_train()
-        logger.info("Decision Trees Engine ready.")
-    except Exception as e:
-        logger.error(f"Decision Trees training error: {str(e)}")
+# (Movido a lifespan)
 
 class ExtractionRequest(BaseModel):
     text: str
