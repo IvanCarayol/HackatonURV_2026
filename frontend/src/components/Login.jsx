@@ -10,7 +10,7 @@ export default function Login({ onLoginSuccess, onBack }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080'
 
   function handleChange(e) {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -37,7 +37,8 @@ export default function Login({ onLoginSuccess, onBack }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Error en la autenticación')
 
-      onLoginSuccess(data)
+      // Redirigir a vista.html al tener éxito
+      window.location.href = '/vista.html'
     } catch (err) {
       setError(err.message)
     } finally {
@@ -57,25 +58,25 @@ export default function Login({ onLoginSuccess, onBack }) {
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="field">
           <label>Nombre del Médico</label>
-          <input 
+          <input
             type="text" name="username" placeholder="F. Apellido"
-            value={formData.username} onChange={handleChange} required 
+            value={formData.username} onChange={handleChange} required
           />
         </div>
 
         <div className="field">
           <label>Contraseña</label>
-          <input 
+          <input
             type="password" name="password" placeholder="••••••••"
-            value={formData.password} onChange={handleChange} required 
+            value={formData.password} onChange={handleChange} required
           />
         </div>
 
         <div className="field">
           <label>Centro Médico</label>
-          <input 
+          <input
             type="text" name="center" placeholder=" HOSPITAL JOAN XXIII"
-            value={formData.center} onChange={handleChange} required 
+            value={formData.center} onChange={handleChange} required
           />
         </div>
 

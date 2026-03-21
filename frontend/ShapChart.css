@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+.shap-container {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-width: 800px;
+  max-width: 1000px;
+  background: rgba(30, 41, 59, 0.75); /* slate-800 translucent */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.shap-header {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 2.5rem;
+  text-align: center;
+  color: #ffffff;
+  letter-spacing: -0.025em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.shap-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+  padding: 15px 220px;
+}
+
+/* La línea central 0 */
+.shap-axis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.3) 10%, rgba(148, 163, 184, 0.3) 90%, rgba(148, 163, 184, 0) 100%);
+  z-index: 1;
+  transform: translateX(-50%);
+}
+
+.shap-row {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  height: 36px;
+  opacity: 0;
+  animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInUp {
+  0% { transform: translateY(15px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.shap-side {
+  flex: 1;
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+.shap-side-left {
+  justify-content: flex-end;
+  padding-right: 6px;
+}
+
+.shap-side-right {
+  justify-content: flex-start;
+  padding-left: 6px;
+}
+
+/* Barras visuales */
+.shap-bar {
+  height: 28px;
+  min-width: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.shap-bar-positive {
+  background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%);
+  justify-content: flex-start;
+  padding-left: 1rem;
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.shap-bar-negative {
+  background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+  justify-content: flex-end;
+  padding-right: 1rem;
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+/* Nombres de las variables */
+.shap-label {
+  position: absolute;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+  width: 140px;
+  top: 50%;
+  transform: translateY(-50%);
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+}
+
+.shap-label-left {
+  right: calc(100% + 12px);
+  text-align: right;
+}
+
+.shap-label-right {
+  left: calc(100% + 12px);
+  text-align: left;
+}
+
+.shap-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.shap-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.05);
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.shap-legend-center {
+  font-weight: 600;
+  color: #f8fafc;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 18px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.shap-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.shap-dot-negative {
+  background-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+.shap-dot-positive {
+  background-color: #fb7185;
+  box-shadow: 0 0 10px rgba(251, 113, 133, 0.6);
+}

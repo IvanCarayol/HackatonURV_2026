@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Demostración de Explicabilidad IA (SHAP)</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: radial-gradient(circle at top right, #1e293b, #0f172a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    
+    .shap-container {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      width: 100%;
+      min-width: 800px;
+      max-width: 1000px;
+      background: rgba(30, 41, 59, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+    }
+
+    .shap-header {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .shap-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+      padding: 15px 220px;
+    }
+
+    .shap-axis {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.3) 10%, rgba(148, 163, 184, 0.3) 90%, rgba(148, 163, 184, 0) 100%);
+      z-index: 1;
+      transform: translateX(-50%);
+    }
+
+    .shap-row {
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+      height: 36px;
+      opacity: 0;
+      animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes slideInUp {
+      0% { transform: translateY(15px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    .shap-side {
+      flex: 1;
+      display: flex;
+      position: relative;
+      align-items: center;
+    }
+
+    .shap-side-left {
+      justify-content: flex-end;
+      padding-right: 6px;
+    }
+
+    .shap-side-right {
+      justify-content: flex-start;
+      padding-left: 6px;
+    }
+
+    .shap-bar {
+      height: 28px;
+      min-width: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      color: #ffffff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .shap-bar-positive {
+      background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%);
+      justify-content: flex-start;
+      padding-left: 1rem;
+      border-top-left-radius: 3px;
+      border-bottom-left-radius: 3px;
+    }
+
+    .shap-bar-negative {
+      background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+      justify-content: flex-end;
+      padding-right: 1rem;
+      border-top-right-radius: 3px;
+      border-bottom-right-radius: 3px;
+    }
+
+    .shap-label {
+      position: absolute;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #cbd5e1;
+      white-space: nowrap;
+      top: 50%;
+      transform: translateY(-50%);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      letter-spacing: 0.01em;
+    }
+
+    .shap-label-left {
+      right: calc(100% + 16px);
+    }
+
+    .shap-label-right {
+      left: calc(100% + 16px);
+    }
+
+    .shap-legend {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.9rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .shap-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      padding: 8px 16px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .shap-legend-center {
+      font-weight: 600;
+      color: #f8fafc;
+      background: rgba(255,255,255,0.1);
+      padding: 8px 18px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .shap-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .shap-dot-negative {
+      background-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+    }
+
+    .shap-dot-positive {
+      background-color: #fb7185;
+      box-shadow: 0 0 10px rgba(251, 113, 133, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function ShapChart({ shapData, baseRisk }) {
+      const [mounted, setMounted] = useState(false);
+
+      useEffect(() => {
+        setTimeout(() => setMounted(true), 150);
+      }, []);
+
+      const data = shapData || [
+        { feature: 'Pacient Crònic Complex (PCC)', impact: 0.82, type: 'positive' },
+        { feature: 'Malaltia Sist. Nerviós (2)', impact: 0.45, type: 'positive' },
+        { feature: 'Grup Edat (80-84 anys)', impact: 0.35, type: 'positive' },
+        { feature: 'Fàrmacs Actius (8 totals)', impact: 0.22, type: 'positive' },
+        { feature: 'Sexe (Dona)', impact: -0.15, type: 'negative' },
+        { feature: 'Antiinfecciosos Prescrits (0)', impact: -0.18, type: 'negative' },
+        { feature: 'Índex de Fragilitat (12)', impact: -0.25, type: 'negative' }
+      ];
+
+      const maxAbsImpact = Math.max(...data.map(d => Math.abs(d.impact)), 0.01);
+
+      return (
+        <div className="shap-container">
+          <h3 className="shap-header">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{color: '#38bdf8', filter: 'drop-shadow(0 0 8px rgba(56,189,248,0.5))'}}><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            Radiografia de Risc Clínic Avançada
+          </h3>
+          
+          <div className="shap-chart">
+            <div className="shap-axis"></div>
+            
+            {data.map((item, index) => {
+              const targetWidth = Math.min((Math.abs(item.impact) / maxAbsImpact) * 100, 100);
+              const currentWidth = mounted ? targetWidth : 0;
+              
+              return (
+                <div key={index} className="shap-row" style={{ animationDelay: `${index * 0.08}s` }}>
+                  <div className="shap-side shap-side-left">
+                    {item.impact < 0 && (
+                      <div className="shap-bar shap-bar-negative" style={{ width: `${currentWidth}%` }}>
+                        <span className="shap-label shap-label-left">
+                          {item.feature}
+                        </span>
+                        {item.impact.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="shap-side shap-side-right">
+                    {item.impact > 0 && (
+                      <div className="shap-bar shap-bar-positive" style={{ width: `${currentWidth}%` }}>
+                        <span className="shap-label shap-label-right">
+                          {item.feature}
+                        </span>
+                        +{item.impact.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="shap-legend">
+            <div className="shap-legend-item">
+              <div className="shap-dot shap-dot-negative"></div>
+              <span>Redueix el Risc</span>
+            </div>
+            {baseRisk !== undefined && (
+              <div className="shap-legend-center">
+                Risc Base (Tweedie): {baseRisk}%
+              </div>
+            )}
+            <div className="shap-legend-item">
+              <div className="shap-dot shap-dot-positive"></div>
+              <span>Augmenta el Risc</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<ShapChart baseRisk={15.2} />);
+  </script>
+
+</body>
+</html>

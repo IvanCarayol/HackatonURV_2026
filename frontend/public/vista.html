@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="ca">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA Triage - Hospital Joan XXIII</title>
+
+    <!-- React & Babel for SHAP Component -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #2C3E50;
+            --secondary: #3498DB;
+            --danger: #E74C3C;
+            --warning: #F39C12;
+            --success: #27AE60;
+            --bg: #ECF0F1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .col {
+            flex: 1;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            border-top: 4px solid var(--secondary);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #BDC3C7;
+            border-radius: 4px;
+            width: 60%;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980B9;
+        }
+
+        .btn-ia {
+            background-color: #8E44AD;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .btn-ia:hover {
+            background-color: #732D91;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .data-item {
+            background: #F8F9F9;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .data-label {
+            font-size: 0.85rem;
+            color: #7F8C8D;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .data-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .result-card {
+            border-left: 5px solid;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .risk-high {
+            border-color: var(--danger);
+            background-color: #FDEDEC;
+        }
+
+        .risk-med {
+            border-color: var(--warning);
+            background-color: #FEF5E7;
+        }
+
+        .risk-low {
+            border-color: var(--success);
+            background-color: #EAFAF1;
+        }
+
+        .result-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        .badge-red {
+            background: var(--danger);
+        }
+
+        .badge-yellow {
+            background: var(--warning);
+        }
+
+        .badge-green {
+            background: var(--success);
+        }
+
+        /* Actions for explainability */
+        .btn-explain {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-explain:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal classes */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            width: 95%;
+            max-width: 1400px;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: #f8fafc;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            background: #0f172a;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.35rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #f43f5e;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: row;
+            gap: 30px;
+            padding: 25px;
+            overflow-y: auto;
+            background: radial-gradient(circle at top right, #1e293b, #0f172a);
+        }
+
+        .modal-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #38bdf8;
+            margin-bottom: 5px;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .modal-desc {
+            font-size: 0.95rem;
+            color: #bbc7d8;
+            margin-top: 0;
+            line-height: 1.5;
+        }
+
+        .general-img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            object-fit: contain;
+            background: white;
+            /* In case the PNG is transparent with dark text */
+            padding: 10px;
+        }
+
+        /* SHAP Component Inside Modal (Adapted from ShapChart.css) */
+        .shap-container {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            width: 100%;
+            min-width: 0;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-sizing: border-box;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .shap-header {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 2rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .shap-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            position: relative;
+            padding: 10px 145px;
+        }
+
+        .shap-axis {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0) 0%, rgba(148, 163, 184, 0.2) 10%, rgba(148, 163, 184, 0.2) 90%, rgba(148, 163, 184, 0) 100%);
+            transform: translateX(-50%);
+        }
+
+        .shap-row {
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            height: 30px;
+            opacity: 0;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideInUp {
+            0% {
+                transform: translateY(15px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .shap-side {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .shap-side-left {
+            justify-content: flex-end;
+            padding-right: 4px;
+        }
+
+        .shap-side-right {
+            justify-content: flex-start;
+            padding-left: 4px;
+        }
+
+        .shap-bar {
+            height: 24px;
+            min-width: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .shap-bar-positive {
+            background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%);
+            justify-content: flex-start;
+            padding-left: 0.75rem;
+            border-top-left-radius: 2px;
+            border-bottom-left-radius: 2px;
+        }
+
+        .shap-bar-negative {
+            background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+            justify-content: flex-end;
+            padding-right: 0.75rem;
+            border-top-right-radius: 2px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .shap-label {
+            position: absolute;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.2;
+            width: 130px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .shap-label-left {
+            right: calc(100% + 12px);
+            text-align: right;
+        }
+
+        .shap-label-right {
+            left: calc(100% + 12px);
+            text-align: left;
+        }
+
+        .shap-legend {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .shap-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .shap-legend-center {
+            font-weight: 600;
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .shap-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .shap-dot-negative {
+            background-color: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+        }
+
+        .shap-dot-positive {
+            background-color: #fb7185;
+            box-shadow: 0 0 8px rgba(251, 113, 133, 0.6);
+        }
+
+        /* Global Weights Chart Styles */
+        .gw-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            position: relative;
+            padding: 10px 0;
+            width: 100%;
+        }
+
+        .gw-row {
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .gw-label {
+            width: 45%;
+            text-align: right;
+            padding-right: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+
+        .gw-bar-container {
+            width: 55%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            height: 24px;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .gw-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%);
+            border-radius: 6px;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>🏥 Suite IA Gestió Hospitalària (Hackató 2026)</h1>
+        <div>Dr. Usuari | Servei d'Urgències</div>
+    </header>
+
+    <div class="container">
+        <div class="col">
+            <div class="search-box">
+                <input type="text" id="inputId" placeholder="Introdueixi l'ID del pacient (ex: 14775)...">
+                <button onclick="buscarPacient()">Cercar a l'Historial</button>
+            </div>
+
+            <div id="patientData" class="card hidden">
+                <h2 style="margin-top:0;">Dades del Pacient (Extretes de l'EHR)</h2>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">Sexe / Edat</div>
+                        <div class="data-value" id="valSexeEdat">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Etiqueta Administrativa Actual</div>
+                        <div class="data-value" id="valCronic" style="color: var(--danger);">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Fàrmacs Actius (Total)</div>
+                        <div class="data-value" id="valFarmacs">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Diagnòstics (Total)</div>
+                        <div class="data-value" id="valDiags">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Visites a Primària (12 mesos)</div>
+                        <div class="data-value" id="valPrimaria">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Visites a Urgències (12 mesos)</div>
+                        <div class="data-value" id="valUrgencies">--</div>
+                    </div>
+                </div>
+                <button class="btn-ia" onclick="avaluarIA()">🧠 Avaluar Risc amb Intel·ligència Artificial</button>
+            </div>
+        </div>
+
+        <div class="col">
+            <div id="aiResults" class="hidden">
+                <h2 style="margin-top:0; color: var(--primary);">🩺 Resultats dels Models Predictius</h2>
+
+                <div class="result-card" id="cardPCC">
+                    <div class="result-title">
+                        <span>1. Auditor de Cronicitat</span>
+                        <span class="badge badge-red" id="badgePCC">--% Probabilitat</span>
+                    </div>
+                    <p id="descPCC"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <button class="btn-explain" onclick="openModal('PCC')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Inspeccionar Raonament Mèdic (IA)
+                    </button>
+                </div>
+
+                <div class="result-card risk-med" id="cardVolumen">
+                    <div class="result-title">
+                        <span>2. Previsió d'Urgències a 30 dies</span>
+                        <span class="badge badge-yellow" id="badgeVolumen">-- Visites Esperades</span>
+                    </div>
+                    <p id="descVolumen"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <button class="btn-explain" onclick="openModal('Urgències')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Inspeccionar Raonament Mèdic (IA)
+                    </button>
+                </div>
+
+                <div class="result-card risk-high" id="cardMortalitat">
+                    <div class="result-title">
+                        <span>3. Risc de Mortalitat a 1 Any</span>
+                        <span class="badge badge-red" id="badgeMortalitat">Risc Alt (--%)</span>
+                    </div>
+                    <p id="descMortalitat"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <button class="btn-explain" onclick="openModal('Mortalitat')">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Inspeccionar Raonament Mèdic (IA)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPLAINABILITY MODAL -->
+    <div id="explainModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20" />
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                    Auditoria de la IA: Caixa Blanca
+                </h3>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="flex-direction: column; gap: 20px;">
+
+                <!-- TEXTUAL SUMMARY -->
+                <div class="modal-text-summary"
+                    style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px;">
+                    <div class="modal-section-title">A. Justificació Textual de la IA</div>
+                    <p id="modalTextExplanation" class="modal-desc"
+                        style="font-size: 1.05rem; color: #f8fafc; line-height: 1.6;"></p>
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 30px; width: 100%;">
+                    <!-- SHAP INDIVIDUAL COLUMN -->
+                    <div class="modal-col">
+                        <div class="modal-section-title">B. Raonament Individual Clínic (SHAP Values)</div>
+                        <p class="modal-desc">S'exposa el raonament de decisió <strong>únicament per a aquest
+                                pacient</strong>. Com més s'eixampla la barra dreta, més fa pujar el risc. La barra
+                            esquerra redueix el risc.</p>
+                        <div id="shapRoot"
+                            style="margin-top: 15px; display: flex; justify-content: center; min-height: 400px; width: 100%;">
+                        </div>
+                    </div>
+
+                    <!-- GENERAL WEIGHTS COLUMN -->
+                    <div class="modal-col">
+                        <div class="modal-section-title">C. Pesos Generals del Model (Arbre de Decisió)</div>
+                        <p class="modal-desc">Aquest gràfic mostra la intel·ligència general apresa. Quines són les
+                            variables que la IA té globalment més en compte a l'hora d'avaluar l'estat de tothom?</p>
+                        <div id="generalWeightsRoot"
+                            style="margin-top: 15px; display: flex; justify-content: center; min-height: 400px; width: 100%;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SHAP REACT COMPONENT INJECT -->
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function ShapChart({ shapData, baseRisk }) {
+            const [mounted, setMounted] = useState(false);
+            useEffect(() => { setTimeout(() => setMounted(true), 150); }, []);
+
+            const data = shapData || [
+                { feature: 'Pacient Crònic Complex (PCC)', impact: 0.82, type: 'positive' },
+                { feature: 'Malaltia Sist. Nerviós (2)', impact: 0.45, type: 'positive' },
+                { feature: 'Grup Edat (80-84 anys)', impact: 0.35, type: 'positive' },
+                { feature: 'Fàrmacs Actius (8 totals)', impact: 0.22, type: 'positive' },
+                { feature: 'Sexe (Dona)', impact: -0.15, type: 'negative' },
+                { feature: 'Antiinfecciosos Prescrits (0)', impact: -0.18, type: 'negative' },
+                { feature: 'Índex de Fragilitat (12)', impact: -0.25, type: 'negative' }
+            ];
+
+            const maxAbsImpact = Math.max(...data.map(d => Math.abs(d.impact)), 0.01);
+
+            return (
+                <div className="shap-container">
+                    <div className="shap-chart">
+                        <div className="shap-axis"></div>
+                        {data.map((item, index) => {
+                            const targetWidth = Math.min((Math.abs(item.impact) / maxAbsImpact) * 100, 100);
+                            const currentWidth = mounted ? targetWidth : 0;
+                            return (
+                                <div key={index} className="shap-row" style={{ animationDelay: `${index * 0.08}s` }}>
+                                    <div className="shap-side shap-side-left">
+                                        {item.impact < 0 && (
+                                            <div className="shap-bar shap-bar-negative" style={{ width: `${currentWidth}%` }}>
+                                                <span className="shap-label shap-label-left">{item.feature}</span>
+                                                {item.impact.toFixed(2)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="shap-side shap-side-right">
+                                        {item.impact > 0 && (
+                                            <div className="shap-bar shap-bar-positive" style={{ width: `${currentWidth}%` }}>
+                                                <span className="shap-label shap-label-right">{item.feature}</span>
+                                                +{item.impact.toFixed(2)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        function GlobalWeightsChart({ weightsData }) {
+            const [mounted, setMounted] = useState(false);
+            useEffect(() => { setTimeout(() => setMounted(true), 150); }, []);
+
+            const data = weightsData || [
+                { feature: 'cronic', importance: 15.71 },
+                { feature: 'grup_edat', importance: 12.43 },
+                { feature: 'indice_fragilidad', importance: 8.90 },
+                { feature: 'sexe', importance: 4.80 },
+                { feature: 'altres', importance: 4.25 },
+                { feature: 'diags_totals', importance: 4.18 },
+                { feature: 'antiinfecciosos_per_a_us_sistemic', importance: 4.17 },
+                { feature: 'organs_dels_sentits', importance: 3.81 }
+            ];
+
+            const maxImpact = Math.max(...data.map(d => d.importance), 0.01);
+
+            return (
+                <div className="shap-container">
+                    <h3 className="shap-header" style={{ marginBottom: '1.5rem' }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 8px rgba(168,85,247,0.5))' }}><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                        Impacte Global de les Variables
+                    </h3>
+
+                    <div className="gw-chart">
+                        {data.map((item, index) => {
+                            const targetWidth = Math.min((item.importance / maxImpact) * 100, 100);
+                            const currentWidth = mounted ? targetWidth : 0;
+                            return (
+                                <div key={index} className="gw-row" style={{ animationDelay: `${index * 0.06}s` }}>
+                                    <div className="gw-label" title={item.feature}>{item.feature}</div>
+                                    <div className="gw-bar-container">
+                                        <div className="gw-bar" style={{ width: `${currentWidth}%` }}>
+                                            {item.importance.toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+
+        let root = null;
+        let gwRoot = null;
+        let aiDataCache = null;
+
+        const dictClinicalNames = {
+            'sexe': 'Sexe',
+            'grup_edat': 'Grup d\'Edat',
+            'antiinfecciosos_per_a_us_sistemic': 'Tractaments Antiinfecciosos',
+            'sistema_nervios': 'Fàrmacs Sist. Nerviós',
+            'sistema_cardiovascular': 'Fàrmacs Cardiovasculars',
+            'sistema_musculoesqueletic': 'Fàrmacs Musculoesquelètics',
+            'sistema_digestiu_i_metabolisme': 'Fàrmacs Digestius',
+            'sistema_respiratori': 'Fàrmacs Respiratoris',
+            'preparats_hormonals_sistemics': 'Hormones Sistèmiques',
+            'sang_i_organs_hematopoetics': 'Fàrmacs Hematològics',
+            'dermatologics': 'Fàrmacs Dermatològics',
+            'altres': 'Altres Fàrmacs',
+            'organs_dels_sentits': 'Fàrmacs Órgans Sentits',
+            'diags_totals': 'Total Diagnòstics',
+            'farmacs_totals': 'Total Fàrmacs Actius',
+            'cronic': 'Estat de Cronicitat',
+            'hospitalitzacions_previes': 'Ingressos Hospitalaris',
+            'historial_urgencies_previes': 'Visites Prèvies Urgències',
+            'total_primaria_any': 'Visites a Atenció Primària',
+            'total_visites_primaria': 'Visites a Atenció Primària',
+            'carga_asistencial_total': 'Càrrega Assistencial Total',
+            'carga_asistencial_pasada': 'Càrrega Assistencial Prèvia',
+            'ratio_gravedad_visitas': 'Rati de Gravetat',
+            'ratio_ingresos_urgencias': 'Rati Ingressos/Urgències',
+            'complejidad_quimica': 'Complexitat Farmacològica',
+            'alerta_polimedicacion': 'Alerta Polimedicació',
+            'coctel_cardio_nervioso': 'Interacció Cardio-Nerviosa',
+            'infeccion_reciente_grave': 'Infecció Recent Greu',
+            'problemes_salut_cronics': 'Malalties Cròniques',
+            'problemes_salut_aguts': 'Problemes de Salut Aguts',
+            'problemes_salut_neoplasia_maligna': 'Neoplàsies Malignes',
+            'problemes_salut_neoplasia_benigna': 'Neoplàsies Benignes',
+            'signes_i_sintomes': 'Símptomes No Específics',
+            'indice_fragilidad': 'Índex de Fragilitat Combinat',
+            'TARGET_mortalidad_1_any': 'Risc Mortalitat Base'
+        };
+
+        function translateFeature(rawFeature) {
+            let match = rawFeature.match(/^(.*?)(\s+\(.*)?$/);
+            if (!match) return rawFeature;
+
+            let key = match[1].trim();
+            let valSuffix = match[2] || '';
+
+            let friendlyName = dictClinicalNames[key];
+            if (!friendlyName) {
+                friendlyName = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            }
+            return friendlyName + valSuffix;
+        }
+
+        // Global function to open modal and render React
+        window.openModal = function (modelName) {
+            document.getElementById('explainModal').classList.add('active');
+
+            let shapData = [];
+            let weightsData = [];
+
+            if (aiDataCache) {
+                if (modelName === 'PCC') {
+                    shapData = JSON.parse(JSON.stringify(aiDataCache.pcc.shap));
+                    weightsData = JSON.parse(JSON.stringify(aiDataCache.pcc.global_weights));
+                } else if (modelName === 'Urgències') {
+                    shapData = JSON.parse(JSON.stringify(aiDataCache.volumen.shap));
+                    weightsData = JSON.parse(JSON.stringify(aiDataCache.volumen.global_weights));
+                } else if (modelName === 'Mortalitat') {
+                    shapData = JSON.parse(JSON.stringify(aiDataCache.mortalidad.shap));
+                    weightsData = JSON.parse(JSON.stringify(aiDataCache.mortalidad.global_weights));
+                }
+            }
+
+            // Translate the features for display
+            if (shapData) {
+                shapData.forEach(item => { item.feature = translateFeature(item.feature); });
+            }
+            if (weightsData) {
+                weightsData.forEach(item => { item.feature = translateFeature(item.feature); });
+            }
+
+            // Generate Textual Explanation
+            let posList = [];
+            let negList = [];
+            if (shapData && shapData.length > 0) {
+                const sortedShap = [...shapData].sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact));
+                posList = sortedShap.filter(s => s.impact > 0).slice(0, 3);
+                negList = sortedShap.filter(s => s.impact < 0).slice(0, 3);
+            }
+
+            let valProb = "--";
+            let objExamen = modelName;
+            if (aiDataCache) {
+                if (modelName === 'PCC') {
+                    valProb = (aiDataCache.pcc.probabilidad * 100).toFixed(1) + "%";
+                    objExamen = "Probabilitat de pertànyer al col·lectiu de Pacients Crònics Complexos (PCC)";
+                } else if (modelName === 'Urgències') {
+                    valProb = aiDataCache.volumen.esperadas.toFixed(2) + " visites esperades";
+                    objExamen = "Pronòstic d'Urgències en un marge de 30 dies (Model de regressió de Poisson/Tweedie)";
+                } else if (modelName === 'Mortalitat') {
+                    valProb = (aiDataCache.mortalidad.probabilidad * 100).toFixed(1) + "%";
+                    objExamen = "Taxa de Risc de Mortalitat objectiva calculada a 1 any vista";
+                }
+            }
+
+            let explanation = `
+                <div style="font-family: 'Inter', sans-serif; line-height: 1.6; color: #f8fafc; font-size: 1.05rem;">
+                    <strong style="color: #38bdf8; font-size: 1.15rem; display:block; margin-bottom: 15px;">Avaluació Clínica de Suport Biomètric</strong>
+                    
+                    D'acord amb l'anàlisi sistemàtic i algorítmic de l'Historial Clínic Electrònic d'aquest pacient mitjançant tècniques d'Intel·ligència Artificial, l'avaluació prediu retrospectivament un índex de 
+                    <strong style="color:var(--secondary); font-size:1.2rem; background: rgba(52, 152, 219, 0.1); padding: 2px 6px; border-radius: 4px;">${valProb}</strong> respecte a la mesura de <em>${objExamen}</em>.
+                    <br><br>
+                    
+                    Aquesta resolució no es tracta d'una suposició opaca; s'ha calculat agregant múltiples variables demogràfiques i codificacions diagnòstiques de l'EHR. Aplicant la descomposició interpretativa SHAP, podem quantificar exactament i transparentment l'impacte biològic/predictiu aïllat de les singularitats rellevants d'aquest pacient:
+                    <br>
+            `;
+
+            if (posList.length > 0) {
+                explanation += `<div style="margin-top: 20px; border-left: 3px solid #f43f5e; padding-left: 15px;">
+                    <strong style="color: #fb7185; font-size: 1.1rem;">📉 Factors D'Agravament Relacionats:</strong><br>
+                    S'han processat pautes d'activitat i quadres clínics en el sistema de salut que incideixen directament en l'increment d'aquesta estimació per sobre de la base mitjana observada a la població general. Concretament:<br>
+                    <ul style="margin-top: 5px;">`;
+                posList.forEach(p => {
+                    explanation += `<li><strong>${p.feature}</strong>: Aporta una penalització predictiva neta superior al patró de normalitat (+${p.impact.toFixed(2)} unitats logarítmiques/SHAP).</li>`;
+                });
+                explanation += `</ul></div>`;
+            }
+
+            if (negList.length > 0) {
+                explanation += `<div style="margin-top: 20px; border-left: 3px solid #38bdf8; padding-left: 15px;">
+                    <strong style="color: #7dd3fc; font-size: 1.1rem;">📈 Factors d'Atenuació / Protecció Detectats:</strong><br>
+                    D'altra banda, els models identifiquen determinades condicions que actuen com amortidors de severitat, disminuint significativament l'estimació de risc o necessitat d'activitat en l'horitzó temporal observat:<br>
+                    <ul style="margin-top: 5px;">`;
+                negList.forEach(n => {
+                    explanation += `<li><strong>${n.feature}</strong>: Contribueix reduint severament la incertesa o el risc establert, ajudant l'estabilització matemàtica de l'evolució clínica (${n.impact.toFixed(2)} unitats).</li>`;
+                });
+                explanation += `</ul></div>`;
+            }
+
+            explanation += `<br><i style="font-size: 0.9rem; color: #94a3b8;">Avís d'Ús: Els coeficients exposats entre parèntesis quantifiquen el suport decisiu causat i aïllat a causa de les diferències personals del pacient contraposat al col·lectiu, i requereixen de validació exclusivament Mèdica per la seva idoneïtat de pla d'alta o seguiment.</i></div>`;
+
+            document.getElementById('modalTextExplanation').innerHTML = explanation;
+
+            const rootElement = document.getElementById('shapRoot');
+            if (!root) { root = ReactDOM.createRoot(rootElement); }
+            root.render(<ShapChart key={'shap' + Date.now()} shapData={shapData} />);
+
+            const gwElement = document.getElementById('generalWeightsRoot');
+            if (!gwRoot) { gwRoot = ReactDOM.createRoot(gwElement); }
+
+            // Render the global weights component dynamically
+            gwRoot.render(<GlobalWeightsChart key={'gw' + Date.now()} weightsData={weightsData} />);
+        }
+    </script>
+
+
+    <!-- MAIN JS -->
+    <script>
+        const API_BASE = "http://127.0.0.1:8080";
+        let currentPatientId = null;
+
+        async function buscarPacient() {
+            const id = document.getElementById('inputId').value;
+            if (id === '') { alert("Si us plau, introdueixi un ID (ex: 14775)"); return; }
+
+            try {
+                const response = await fetch(`${API_BASE}/patient/${id}`);
+                if (!response.ok) {
+                    alert("Pacient no trobat a la base de dades local.");
+                    return;
+                }
+                const data = await response.json();
+                currentPatientId = id;
+
+                const txtSexe = data.sexe === 'D' ? 'Dona' : 'Home';
+                document.getElementById('valSexeEdat').innerText = `${txtSexe} | ${data.grup_edat} anys`;
+
+                let estrCronic = data.cronic === 'NO' ? 'NO (Sense etiqueta)' : data.cronic;
+                document.getElementById('valCronic').innerText = estrCronic;
+                document.getElementById('valCronic').style.color = data.cronic === 'NO' ? 'var(--success)' : 'var(--danger)';
+
+                document.getElementById('valFarmacs').innerText = `${data.farmacs_totals} medicaments actius`;
+                document.getElementById('valDiags').innerText = `${data.diags_totals} diagnòstics`;
+                document.getElementById('valPrimaria').innerText = `${data.visites_primaria} visites`;
+                document.getElementById('valUrgencies').innerText = `${data.visites_urgencies} visites`;
+
+                document.getElementById('patientData').classList.remove('hidden');
+                document.getElementById('aiResults').classList.add('hidden');
+                aiDataCache = null; // reset cache
+            } catch (error) {
+                console.error("Error al cercar:", error);
+                alert("Error de connexió al servidor de dades. Assegura't que el server.py està funcionant.");
+            }
+        }
+
+        async function avaluarIA() {
+            if (!currentPatientId) return;
+
+            document.getElementById('aiResults').classList.remove('hidden');
+
+            // Mostrar loading..
+            document.getElementById('descPCC').innerText = "Processant amb algoritmes ML natius...";
+            document.getElementById('descVolumen').innerText = "Generant estimacions...";
+            document.getElementById('descMortalitat').innerText = "Avaluant riscos severs...";
+
+            try {
+                const res = await fetch(`${API_BASE}/predict/${currentPatientId}`);
+                if (!res.ok) throw new Error("Error backend IA");
+                const aiData = await res.json();
+                aiDataCache = aiData; // guardar a cache
+
+                // Actualitzar targetes UI amb dades NATIVES de l'IA
+
+                // 1. PCC
+                const probPcc = (aiData.pcc.probabilidad * 100).toFixed(1);
+                document.getElementById('badgePCC').innerText = `${probPcc}% Probabilitat`;
+                let descPCC = "";
+                if (probPcc > 75) {
+                    document.getElementById('badgePCC').className = "badge badge-red";
+                    document.getElementById('cardPCC').className = "result-card risk-high";
+                    descPCC = "🚨 Perfil idèntic a un Crònic Complex. Derivar a medicina interna urgentment.";
+                } else if (probPcc > 50) {
+                    document.getElementById('badgePCC').className = "badge badge-yellow";
+                    document.getElementById('cardPCC').className = "result-card risk-med";
+                    descPCC = "⚠️ Perfil d'alt risc. Suggereix reavaluació a Primària.";
+                } else {
+                    document.getElementById('badgePCC').className = "badge badge-green";
+                    document.getElementById('cardPCC').className = "result-card risk-low";
+                    descPCC = "✅ Perfil Estable. Coincideix amb pacient NO crònic.";
+                }
+                document.getElementById('descPCC').innerText = descPCC;
+
+                // 2. Volum
+                const visites = aiData.volumen.esperadas.toFixed(2);
+                document.getElementById('badgeVolumen').innerText = `${visites} Visites (1 mes)`;
+                document.getElementById('descVolumen').innerText = `El model preveu ${visites} visites a urgències en els propers 30 dies basant-se en l'historial del pacient.`;
+
+                if (visites >= 0.25) {
+                    document.getElementById('badgeVolumen').className = "badge badge-red";
+                    document.getElementById('cardVolumen').className = "result-card risk-high";
+                } else if (visites >= 0.12) {
+                    document.getElementById('badgeVolumen').className = "badge badge-yellow";
+                    document.getElementById('cardVolumen').className = "result-card risk-med";
+                } else {
+                    document.getElementById('badgeVolumen').className = "badge badge-green";
+                    document.getElementById('cardVolumen').className = "result-card risk-low";
+                }
+
+                // 3. Mortalitat
+                const probMort = (aiData.mortalidad.probabilidad * 100).toFixed(1);
+                document.getElementById('badgeMortalitat').innerText = `Risc ${probMort}%`;
+
+                if (probMort > 50) {
+                    document.getElementById('descMortalitat').innerHTML = "<strong>Alerta Severa:</strong> Alt risc biològic detectat. Considerar cures pal·liatives o adequació d'esforç terapèutic.";
+                    document.getElementById('badgeMortalitat').className = "badge badge-red";
+                    document.getElementById('cardMortalitat').className = "result-card risk-high";
+                } else if (probMort > 20) {
+                    document.getElementById('descMortalitat').innerText = "Risc de mortalitat intermedi en aquest pacient. Recomanable seguiment actiu.";
+                    document.getElementById('badgeMortalitat').className = "badge badge-yellow";
+                    document.getElementById('cardMortalitat').className = "result-card risk-med";
+                } else {
+                    document.getElementById('descMortalitat').innerText = "Risc de mortalitat dins dels marges normals per a la seva edat/grup de malaltia.";
+                    document.getElementById('badgeMortalitat').className = "badge badge-green";
+                    document.getElementById('cardMortalitat').className = "result-card risk-low";
+                }
+
+            } catch (e) {
+                console.error("Error en inferència IA:", e);
+                alert("No s'ha pogut connectar amb el motor d'IA. Comprova que el servidor backend (puerto 8080) està encès.");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('explainModal').classList.remove('active');
+        }
+
+        // Tancar modal si es fa clic fora de la "finestra"
+        document.getElementById('explainModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>
