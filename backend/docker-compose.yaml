@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # The Ollama model engine
+  ollama:
+    image: ollama/ollama
+    container_name: ollama-server
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_storage:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    restart: unless-stopped
+
+  # Our Python FastAPI translation layer
+  llm-service:
+    build:
+      context: ./llm-service
+    container_name: llm-medical-service
+    ports:
+      - "8001:8000"
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama-server:11434
+    restart: unless-stopped
+
+volumes:
+  ollama_storage:
