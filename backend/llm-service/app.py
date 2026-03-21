@@ -6,9 +6,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from ollama import Client
 
-# Añadir la carpeta de decision-trees al path para poder importar el engine
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "decision-trees"))
-from decision_trees_engine import DecisionTreesEngine, map_llm_json_to_engine
+# Importación del Motor de Decisiones (Soporte Local y Docker)
+try:
+    from decision_trees_engine import DecisionTreesEngine, map_llm_json_to_engine
+except ImportError:
+    # Caso local: Añadir la carpeta de decision-trees al path
+    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "decision-trees"))
+    from decision_trees_engine import DecisionTreesEngine, map_llm_json_to_engine
 
 # Logging configuration
 logging.basicConfig(level=logging.INFO)
