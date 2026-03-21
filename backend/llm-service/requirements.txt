@@ -3,3 +3,8 @@ uvicorn
 pydantic
 ollama
 python-multipart
+pandas
+catboost
+optuna
+scikit-learn
+numpy

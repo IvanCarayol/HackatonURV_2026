@@ -21,7 +21,8 @@ services:
   # Our Python FastAPI translation layer
   llm-service:
     build:
-      context: ./llm-service
+      context: .
+      dockerfile: llm-service/Dockerfile
     container_name: llm-medical-service
     ports:
       - "8001:8000"
