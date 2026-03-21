@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IA Triage - Hospital Joan XXIII</title>
+    <title>MedRisk Pro - Panel Médico Avanzado</title>
 
     <!-- React & Babel for SHAP Component -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -23,7 +23,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
             margin: 0;
             color: #333;
@@ -642,25 +642,32 @@
 <body>
 
     <header>
-        <h1>🏥 Suite IA Gestió Hospitalària (Hackató 2026)</h1>
-        <div>Dr. Usuari | Servei d'Urgències</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <h1 style="font-size: 1.8rem; letter-spacing: -0.5px;">MedRisk <span style="font-weight: 300;">Pro</span> <span 
+                style="font-weight: 300; font-size: 0.9rem; margin-left:15px; padding-left:15px; border-left: 1px solid rgba(255,255,255,0.3); opacity: 0.9;">Panel de Gestión Médica</span>
+            </h1>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='/'" 
+            style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; font-size: 0.9rem; color: white; border-radius: 4px; cursor: pointer;">
+            Cerrar Sesión
+        </button>
     </header>
 
     <div class="container" id="listView">
         <div class="col">
-            <h2 style="color: var(--primary); margin-bottom: 1rem;">📋 Llistat de Pacients Evaluats</h2>
+            <h2 style="color: var(--primary); margin-bottom: 1rem;">📋 Listado de Pacientes Evaluados</h2>
             <div class="filters">
-                <input type="text" id="filterId" placeholder="Filtrar per ID..." onkeyup="filtrarPacients()">
+                <input type="text" id="filterId" placeholder="Filtrar por ID..." onkeyup="filtrarPacients()">
                 <select id="filterStatus" onchange="filtrarPacients()">
-                    <option value="all">Totes les Validacions</option>
-                    <option value="validat">Validats (Alguna secció)</option>
-                    <option value="pendent">Totalment Pendents</option>
+                    <option value="all">Todas las Validaciones</option>
+                    <option value="validat">Revisados (Alguna sección)</option>
+                    <option value="pendent">Totalmente Pendientes</option>
                 </select>
                 <select id="filterSection" onchange="filtrarPacients()">
-                    <option value="any">Qualsevol Secció</option>
+                    <option value="any">Cualquier Sección</option>
                     <option value="auditor">Auditor (1/0)</option>
                     <option value="previsor">Previsor (1/0)</option>
-                    <option value="risc">Risc (1/0)</option>
+                    <option value="risc">Riesgo (1/0)</option>
                 </select>
             </div>
             
@@ -669,11 +676,11 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Sexe</th>
-                            <th>Grup Edat</th>
-                            <th>Cronicitat</th>
-                            <th>Validacions</th>
-                            <th>Acció</th>
+                            <th>Sexo</th>
+                            <th>Grupo Edad</th>
+                            <th>Cronicidad</th>
+                            <th>Validaciones</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody id="patientListBody">
@@ -686,16 +693,16 @@
 
     <div id="detailView" class="hidden" style="max-width: 1400px; margin: 0 auto; padding: 20px;">
         <div style="margin-bottom: 20px;">
-            <button onclick="tornarALlista()" style="background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;">&larr; Tornar al Llistat</button>
+            <button onclick="tornarALlista()" style="background: var(--primary); color: white; border: none; padding: 10px 24px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s;">&larr; Volver al Listado</button>
         </div>
         
         <div class="container" style="padding: 0; margin: 0; width: 100%; max-width: none;">
             <div class="col">
                 <div id="patientData" class="card">
-                <h2 style="margin-top:0;">Dades del Pacient (Extretes de l'EHR)</h2>
+                <h2 style="margin-top:0;">Datos del Paciente (Extraídos del EHR)</h2>
                 <div class="data-grid">
                     <div class="data-item">
-                        <div class="data-label">Sexe / Edat</div>
+                        <div class="data-label">Sexo / Edad</div>
                         <div class="data-value" id="valSexeEdat">--</div>
                     </div>
                     <div class="data-item">
@@ -703,88 +710,88 @@
                         <div class="data-value" id="valCronic" style="color: var(--danger);">--</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Fàrmacs Actius (Total)</div>
+                        <div class="data-label">Fármacos Activos (Total)</div>
                         <div class="data-value" id="valFarmacs">--</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Diagnòstics (Total)</div>
+                        <div class="data-label">Diagnósticos (Total)</div>
                         <div class="data-value" id="valDiags">--</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Visites a Primària (12 mesos)</div>
+                        <div class="data-label">Visitas en Primaria (12 meses)</div>
                         <div class="data-value" id="valPrimaria">--</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Visites a Urgències (12 mesos)</div>
+                        <div class="data-label">Visitas en Urgencias (12 meses)</div>
                         <div class="data-value" id="valUrgencies">--</div>
                     </div>
                 </div>
-                <button class="btn-ia" onclick="avaluarIA()">🧠 Avaluar Risc amb Intel·ligència Artificial</button>
+                <button class="btn-ia" onclick="avaluarIA()">🧠 Evaluar Riesgo con Inteligencia Artificial (MedRisk Pro)</button>
             </div>
         </div>
 
         <div class="col">
             <div id="aiResults" class="hidden">
-                <h2 style="margin-top:0; color: var(--primary);">🩺 Resultats dels Models Predictius</h2>
+                <h2 style="margin-top:0; color: var(--primary);">🩺 Resultados de los Modelos Predictivos</h2>
 
                 <div class="result-card" id="cardPCC">
                     <div class="result-title">
-                        <span>1. Auditor de Cronicitat</span>
-                        <span class="badge badge-red" id="badgePCC">--% Probabilitat</span>
+                        <span>1. Auditor de Cronicidad</span>
+                        <span class="badge badge-red" id="badgePCC">--% Probabilidad</span>
                     </div>
-                    <p id="descPCC"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <p id="descPCC"><strong>Análisis IA:</strong> Cálculo en proceso...</p>
                     <button class="btn-explain" onclick="openModal('PCC')">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                        Inspeccionar Raonament Mèdic (IA)
+                        Inspeccionar Razonamiento Médico (IA)
                     </button>
                     <div class="validation-group">
-                        <button class="btn-val btn-accept" onclick="validarPrevisio('auditor', 1)">✓ Valida</button>
-                        <button class="btn-val btn-reject" onclick="validarPrevisio('auditor', -1)">✕ Rebutja</button>
+                        <button class="btn-val btn-accept" onclick="validarPrevisio('auditor', 1)">✓ Validar</button>
+                        <button class="btn-val btn-reject" onclick="validarPrevisio('auditor', -1)">✕ Rechazar</button>
                     </div>
-                    <div id="status-auditor" class="validation-info">Pendent de revisió</div>
+                    <div id="status-auditor" class="validation-info">Pendiente de revisión</div>
                 </div>
 
                 <div class="result-card risk-med" id="cardVolumen">
                     <div class="result-title">
-                        <span>2. Previsió d'Urgències a 30 dies</span>
-                        <span class="badge badge-yellow" id="badgeVolumen">-- Visites Esperades</span>
+                        <span>2. Previsión de Urgencias a 30 días</span>
+                        <span class="badge badge-yellow" id="badgeVolumen">-- Visitas Esperadas</span>
                     </div>
-                    <p id="descVolumen"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <p id="descVolumen"><strong>Análisis IA:</strong> Cálculo en proceso...</p>
                     <button class="btn-explain" onclick="openModal('Urgències')">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                        Inspeccionar Raonament Mèdic (IA)
+                        Inspeccionar Razonamiento Médico (IA)
                     </button>
                     <div class="validation-group">
-                        <button class="btn-val btn-accept" onclick="validarPrevisio('previsor', 1)">✓ Valida</button>
-                        <button class="btn-val btn-reject" onclick="validarPrevisio('previsor', -1)">✕ Rebutja</button>
+                        <button class="btn-val btn-accept" onclick="validarPrevisio('previsor', 1)">✓ Validar</button>
+                        <button class="btn-val btn-reject" onclick="validarPrevisio('previsor', -1)">✕ Rechazar</button>
                     </div>
-                    <div id="status-previsor" class="validation-info">Pendent de revisió</div>
+                    <div id="status-previsor" class="validation-info">Pendiente de revisión</div>
                 </div>
 
                 <div class="result-card risk-high" id="cardMortalitat">
                     <div class="result-title">
-                        <span>3. Risc de Mortalitat a 1 Any</span>
-                        <span class="badge badge-red" id="badgeMortalitat">Risc Alt (--%)</span>
+                        <span>3. Riesgo de Mortalidad a 1 Año</span>
+                        <span class="badge badge-red" id="badgeMortalitat">Riesgo Alto (--%)</span>
                     </div>
-                    <p id="descMortalitat"><strong>Anàlisi IA:</strong> Càlcul en procés...</p>
+                    <p id="descMortalitat"><strong>Análisis IA:</strong> Cálculo en proceso...</p>
                     <button class="btn-explain" onclick="openModal('Mortalitat')">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                        Inspeccionar Raonament Mèdic (IA)
+                        Inspeccionar Razonamiento Médico (IA)
                     </button>
                     <div class="validation-group">
-                        <button class="btn-val btn-accept" onclick="validarPrevisio('risc', 1)">✓ Valida</button>
-                        <button class="btn-val btn-reject" onclick="validarPrevisio('risc', -1)">✕ Rebutja</button>
+                        <button class="btn-val btn-accept" onclick="validarPrevisio('risc', 1)">✓ Validar</button>
+                        <button class="btn-val btn-reject" onclick="validarPrevisio('risc', -1)">✕ Rechazar</button>
                     </div>
-                    <div id="status-risc" class="validation-info">Pendent de revisió</div>
+                    <div id="status-risc" class="validation-info">Pendiente de revisión</div>
                 </div>
             </div>
         </div>
@@ -800,7 +807,7 @@
                         <path d="M12 2v20" />
                         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
-                    Auditoria de la IA: Caixa Blanca
+                    Auditoría de la IA: Caja Blanca
                 </h3>
                 <button class="close-btn" onclick="closeModal()">&times;</button>
             </div>
@@ -809,7 +816,7 @@
                 <!-- TEXTUAL SUMMARY -->
                 <div class="modal-text-summary"
                     style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px;">
-                    <div class="modal-section-title">A. Justificació Textual de la IA</div>
+                    <div class="modal-section-title">A. Justificación Textual de la IA</div>
                     <p id="modalTextExplanation" class="modal-desc"
                         style="font-size: 1.05rem; color: #f8fafc; line-height: 1.6;"></p>
                 </div>
@@ -817,10 +824,10 @@
                 <div style="display: flex; flex-direction: row; gap: 30px; width: 100%;">
                     <!-- SHAP INDIVIDUAL COLUMN -->
                     <div class="modal-col">
-                        <div class="modal-section-title">B. Raonament Individual Clínic (SHAP Values)</div>
-                        <p class="modal-desc">S'exposa el raonament de decisió <strong>únicament per a aquest
-                                pacient</strong>. Com més s'eixampla la barra dreta, més fa pujar el risc. La barra
-                            esquerra redueix el risc.</p>
+                        <div class="modal-section-title">B. Razonamiento Individual Clínico (SHAP Values)</div>
+                        <p class="modal-desc">Se expone el razonamiento de decisión <strong>únicamente para este
+                                paciente</strong>. Cuanto más se ensancha la barra derecha, más hace subir el riesgo. La barra
+                            izquierda reduce el riesgo.</p>
                         <div id="shapRoot"
                             style="margin-top: 15px; display: flex; justify-content: center; min-height: 400px; width: 100%;">
                         </div>
@@ -828,9 +835,9 @@
 
                     <!-- GENERAL WEIGHTS COLUMN -->
                     <div class="modal-col">
-                        <div class="modal-section-title">C. Pesos Generals del Model (Arbre de Decisió)</div>
-                        <p class="modal-desc">Aquest gràfic mostra la intel·ligència general apresa. Quines són les
-                            variables que la IA té globalment més en compte a l'hora d'avaluar l'estat de tothom?</p>
+                        <div class="modal-section-title">C. Pesos Generales del Model (Árbol de Decisión)</div>
+                        <p class="modal-desc">Este gráfico muestra la inteligencia general aprendida. ¿Cuáles son las
+                            variables que la IA tiene globalmente más en cuenta a la hora de evaluar el estado de todos?</p>
                         <div id="generalWeightsRoot"
                             style="margin-top: 15px; display: flex; justify-content: center; min-height: 400px; width: 100%;">
                         </div>
@@ -1100,12 +1107,12 @@
 
     <!-- MAIN JS -->
     <script>
-        const API_BASE = "http://127.0.0.1:8080";
+        const API_BASE = "http://localhost:8080";
         let currentPatientId = null;
         let allPatients = [];
 
         window.onload = function() {
-            console.log("🚀 Vista.html cargada, iniciando carregarPacients...");
+            console.log("🚀 Vista.html cargada, iniciando cargarPacientes...");
             console.log("API_BASE es:", API_BASE);
             carregarPacients();
         };
@@ -1116,21 +1123,21 @@
                 const res = await fetch(`${API_BASE}/patients`);
                 if (!res.ok) throw new Error("Error cargando lista");
                 allPatients = await res.json();
-                console.log("✅ Pacients cargados:", allPatients.length);
+                console.log("✅ Pacientes cargados:", allPatients.length);
                 renderitzarLlista(allPatients);
             } catch (e) {
                 console.error("❌ Error en carregarPacients:", e);
-                alert("No s'ha pogut carregar la llista de pacients. Verifica que el servidor estigui actiu en el puerto 8080.");
+                alert("No se ha podido cargar la lista de pacientes. Verifica que el servidor esté activo en el puerto 8080.");
             }
         }
 
         function renderitzarLlista(patients) {
-            console.log("🎭 Renderizando llista amb", patients.length, "ítems");
+            console.log("🎭 Renderizando lista con", patients.length, "ítems");
             const body = document.getElementById('patientListBody');
             body.innerHTML = '';
             
             if (!patients || patients.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No s\'han trobat pacients que coincideixin amb el filtre.</td></tr>';
+                body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">No se han encontrado pacientes que coincidan con el filtro.</td></tr>';
                 return;
             }
 
@@ -1148,7 +1155,7 @@
                     const reviewedCount = (valAuditor !== 0 ? 1 : 0) + (valPrevisor !== 0 ? 1 : 0) + (valRisc !== 0 ? 1 : 0);
                     
                     const statusClass = reviewedCount > 0 ? 'status-valid' : 'status-pending';
-                    const statusText = reviewedCount > 0 ? `${reviewedCount}/3 Revisat` : 'Pendent';
+                    const statusText = reviewedCount > 0 ? `${reviewedCount}/3 Revisado` : 'Pendiente';
 
                     tr.innerHTML = `
                         <td><strong>${id}</strong></td>
@@ -1206,20 +1213,20 @@
         function updateValidationUI(seccion, valor) {
             const statusEl = document.getElementById(`status-${seccion}`);
             if (valor === 1) {
-                statusEl.innerHTML = "✅ Validat per facultatiu";
+                statusEl.innerHTML = "✅ Validado por facultativo";
                 statusEl.style.color = "var(--success)";
             } else if (valor === -1) {
-                statusEl.innerHTML = "❌ Previsió rebutjada";
+                statusEl.innerHTML = "❌ Previsión rechazada";
                 statusEl.style.color = "var(--danger)";
             } else {
-                statusEl.innerHTML = "Pendent de revisió";
+                statusEl.innerHTML = "Pendiente de revisión";
                 statusEl.style.color = "#718096";
             }
         }
 
         async function validarPrevisio(seccion, valor) {
             if (!currentPatientId) {
-                alert("No hi ha cap pacient seleccionat per validar.");
+                alert("No hay ningún paciente seleccionado para validar.");
                 return;
             }
 
@@ -1233,7 +1240,7 @@
                 if (res.ok) {
                     updateValidationUI(seccion, valor);
                 } else {
-                    throw new Error("Error en la validació");
+                    throw new Error("Error en la validación");
                 }
             } catch (e) {
                 console.error(e);
@@ -1243,12 +1250,12 @@
 
         async function buscarPacient(explicitId) {
             const id = explicitId;
-            if (id === '') { alert("Si us plau, introdueixi un ID (ex: 14775)"); return; }
+            if (id === '') { alert("Por favor, introduzca un ID (ex: 14775)"); return; }
 
             try {
                 const response = await fetch(`${API_BASE}/patient/${id}`);
                 if (!response.ok) {
-                    alert("Pacient no trobat a la base de dades local.");
+                    alert("Paciente no encontrado en la base de datos local.");
                     return;
                 }
                 const data = await response.json();
@@ -1259,24 +1266,24 @@
                 updateValidationUI('previsor', data.tratado_previsor);
                 updateValidationUI('risc', data.tratado_risc);
 
-                const txtSexe = data.sexe === 'D' ? 'Dona' : 'Home';
-                document.getElementById('valSexeEdat').innerText = `${txtSexe} | ${data.grup_edat} anys`;
+                const txtSexe = data.sexe === 'D' ? 'Mujer' : 'Hombre';
+                document.getElementById('valSexeEdat').innerText = `${txtSexe} | ${data.grup_edat} años`;
 
-                let estrCronic = data.cronic === 'NO' ? 'NO (Sense etiqueta)' : data.cronic;
+                let estrCronic = data.cronic === 'NO' ? 'NO (Sin etiqueta)' : data.cronic;
                 document.getElementById('valCronic').innerText = estrCronic;
                 document.getElementById('valCronic').style.color = data.cronic === 'NO' ? 'var(--success)' : 'var(--danger)';
 
-                document.getElementById('valFarmacs').innerText = `${data.farmacs_totals} medicaments actius`;
-                document.getElementById('valDiags').innerText = `${data.diags_totals} diagnòstics`;
-                document.getElementById('valPrimaria').innerText = `${data.visites_primaria} visites`;
-                document.getElementById('valUrgencies').innerText = `${data.visites_urgencies} visites`;
+                document.getElementById('valFarmacs').innerText = `${data.farmacs_totals} medicamentos activos`;
+                document.getElementById('valDiags').innerText = `${data.diags_totals} diagnósticos`;
+                document.getElementById('valPrimaria').innerText = `${data.visites_primaria} visitas`;
+                document.getElementById('valUrgencies').innerText = `${data.visites_urgencies} visitas`;
 
                 document.getElementById('patientData').classList.remove('hidden');
                 document.getElementById('aiResults').classList.add('hidden');
                 aiDataCache = null; // reset cache
             } catch (error) {
-                console.error("Error al cercar:", error);
-                alert("Error de connexió al servidor de dades. Assegura't que el server.py està funcionant.");
+                console.error("Error al buscar:", error);
+                alert("Error de conexión al servidor de datos. Asegúrate de que el server.py esté funcionando.");
             }
         }
 
@@ -1286,9 +1293,9 @@
             document.getElementById('aiResults').classList.remove('hidden');
 
             // Mostrar loading..
-            document.getElementById('descPCC').innerText = "Processant amb algoritmes ML natius...";
-            document.getElementById('descVolumen').innerText = "Generant estimacions...";
-            document.getElementById('descMortalitat').innerText = "Avaluant riscos severs...";
+            document.getElementById('descPCC').innerText = "Procesando con algoritmos ML nativos...";
+            document.getElementById('descVolumen').innerText = "Generando estimaciones...";
+            document.getElementById('descMortalitat').innerText = "Evaluando riesgos severos...";
 
             try {
                 const res = await fetch(`${API_BASE}/predict/${currentPatientId}`);
@@ -1296,36 +1303,36 @@
                 const aiData = await res.json();
                 aiDataCache = aiData; // guardar a cache
 
-                // Actualitzar targetes UI amb dades NATIVES de l'IA
+                // Actualizar tarjetas UI con datos NATIVOS de la IA
 
                 // 1. PCC
                 const probPcc = (aiData.pcc.probabilidad * 100).toFixed(1);
-                document.getElementById('badgePCC').innerText = `${probPcc}% Probabilitat`;
+                document.getElementById('badgePCC').innerText = `${probPcc}% Probabilidad`;
                 let descPCC = "";
                 if (probPcc > 75) {
                     document.getElementById('badgePCC').className = "badge badge-red";
                     document.getElementById('cardPCC').className = "result-card risk-high";
-                    descPCC = "🚨 Perfil idèntic a un Crònic Complex. Derivar a medicina interna urgentment.";
+                    descPCC = "🚨 Perfil idéntico a un Crónico Complejo. Derivar a medicina interna urgentemente.";
                 } else if (probPcc > 50) {
                     document.getElementById('badgePCC').className = "badge badge-yellow";
                     document.getElementById('cardPCC').className = "result-card risk-med";
-                    descPCC = "⚠️ Perfil d'alt risc. Suggereix reavaluació a Primària.";
+                    descPCC = "⚠️ Perfil de alto riesgo. Sugiere reevaluación en Primaria.";
                 } else {
                     document.getElementById('badgePCC').className = "badge badge-green";
                     document.getElementById('cardPCC').className = "result-card risk-low";
-                    descPCC = "✅ Perfil Estable. Coincideix amb pacient NO crònic.";
+                    descPCC = "✅ Perfil Estable. Coincide con paciente NO crónico.";
                 }
                 document.getElementById('descPCC').innerText = descPCC;
 
-                // 2. Volum
-                const visites = aiData.volumen.esperadas.toFixed(2);
-                document.getElementById('badgeVolumen').innerText = `${visites} Visites (1 mes)`;
-                document.getElementById('descVolumen').innerText = `El model preveu ${visites} visites a urgències en els propers 30 dies basant-se en l'historial del pacient.`;
+                // 2. Volumen
+                const visitas = aiData.volumen.esperadas.toFixed(2);
+                document.getElementById('badgeVolumen').innerText = `${visitas} Visitas (1 mes)`;
+                document.getElementById('descVolumen').innerText = `El modelo prevé ${visitas} visitas a urgencias en los próximos 30 días basándose en el historial del paciente.`;
 
-                if (visites >= 0.25) {
+                if (visitas >= 0.25) {
                     document.getElementById('badgeVolumen').className = "badge badge-red";
                     document.getElementById('cardVolumen').className = "result-card risk-high";
-                } else if (visites >= 0.12) {
+                } else if (visitas >= 0.12) {
                     document.getElementById('badgeVolumen').className = "badge badge-yellow";
                     document.getElementById('cardVolumen').className = "result-card risk-med";
                 } else {
@@ -1333,27 +1340,27 @@
                     document.getElementById('cardVolumen').className = "result-card risk-low";
                 }
 
-                // 3. Mortalitat
+                // 3. Mortalidad
                 const probMort = (aiData.mortalidad.probabilidad * 100).toFixed(1);
-                document.getElementById('badgeMortalitat').innerText = `Risc ${probMort}%`;
+                document.getElementById('badgeMortalitat').innerText = `Riesgo ${probMort}%`;
 
                 if (probMort > 50) {
-                    document.getElementById('descMortalitat').innerHTML = "<strong>Alerta Severa:</strong> Alt risc biològic detectat. Considerar cures pal·liatives o adequació d'esforç terapèutic.";
+                    document.getElementById('descMortalitat').innerHTML = "<strong>Alerta Severa:</strong> Alto riesgo biológico detectado. Considerar cuidados paliativos o adecuación de esfuerzo terapéutico.";
                     document.getElementById('badgeMortalitat').className = "badge badge-red";
                     document.getElementById('cardMortalitat').className = "result-card risk-high";
                 } else if (probMort > 20) {
-                    document.getElementById('descMortalitat').innerText = "Risc de mortalitat intermedi en aquest pacient. Recomanable seguiment actiu.";
+                    document.getElementById('descMortalitat').innerText = "Riesgo de mortalidad intermedio en este paciente. Recomendable seguimiento activo.";
                     document.getElementById('badgeMortalitat').className = "badge badge-yellow";
                     document.getElementById('cardMortalitat').className = "result-card risk-med";
                 } else {
-                    document.getElementById('descMortalitat').innerText = "Risc de mortalitat dins dels marges normals per a la seva edat/grup de malaltia.";
+                    document.getElementById('descMortalitat').innerText = "Riesgo de mortalidad dentro de los márgenes normales para su edad/grupo de enfermedad.";
                     document.getElementById('badgeMortalitat').className = "badge badge-green";
                     document.getElementById('cardMortalitat').className = "result-card risk-low";
                 }
 
             } catch (e) {
-                console.error("Error en inferència IA:", e);
-                alert("No s'ha pogut connectar amb el motor d'IA. Comprova que el servidor backend (puerto 8080) està encès.");
+                console.error("Error en inferencia IA:", e);
+                alert("No se ha podido conectar con el motor de IA. Comprueba que el servidor backend (puerto 8080) esté encendido.");
             }
         }
 

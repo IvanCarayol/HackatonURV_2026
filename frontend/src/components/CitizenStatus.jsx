@@ -20,7 +20,7 @@ export default function CitizenStatus({ onBack }) {
     try {
       const res = await fetch(`${API_BASE}/patient/${ticketId.trim()}`)
       if (!res.ok) {
-          throw new Error("No s'ha trobat cap petició amb aquest ID.")
+          throw new Error("No se ha encontrado ninguna petición con este ID.")
       }
       const data = await res.json()
       setStatusData(data)
@@ -34,8 +34,8 @@ export default function CitizenStatus({ onBack }) {
   return (
     <div className="login-container" style={{maxWidth: '500px'}}>
       <div className="login-header">
-        <h2>Consulta d'Estat del Ticket</h2>
-        <p>Introdueixi l'identificador de la seva consulta per veure si ha estat revisada per un facultatiu.</p>
+        <h2>Consulta de Estado del Ticket</h2>
+        <p>Introduzca el identificador de su consulta para ver si ha sido revisada por un facultativo.</p>
       </div>
 
       <form className="login-form" onSubmit={handleSearch}>
@@ -50,7 +50,7 @@ export default function CitizenStatus({ onBack }) {
           />
         </div>
         <button type="submit" className="submit-btn" disabled={loading}>
-          {loading ? 'Consultant...' : 'Consultar Estat'}
+          {loading ? 'Consultando...' : 'Consultar Estado'}
         </button>
       </form>
 
@@ -58,20 +58,20 @@ export default function CitizenStatus({ onBack }) {
 
       {statusData && (
         <div style={{marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)'}}>
-          <h3 style={{marginTop: 0, color: 'var(--primary)'}}>Resum de la Consulta</h3>
-          <p><strong>Codi:</strong> #{statusData.id}</p>
+          <h3 style={{marginTop: 0, color: 'var(--primary)'}}>Resumen de la Consulta</h3>
+          <p><strong>Código:</strong> #{statusData.id}</p>
           
           <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px'}}>
             <StatusItem 
-                label="Auditoria de Cronicitat" 
+                label="Auditoría de Cronicidad" 
                 val={statusData.tratado_auditor} 
             />
             <StatusItem 
-                label="Previsió d'Urgències" 
+                label="Previsión de Urgencias" 
                 val={statusData.tratado_previsor} 
             />
             <StatusItem 
-                label="Anàlisi de Risc" 
+                label="Análisis de Riesgo" 
                 val={statusData.tratado_risc} 
             />
           </div>
@@ -80,7 +80,7 @@ export default function CitizenStatus({ onBack }) {
 
       <div className="login-footer">
         <span className="back-link" onClick={onBack}>
-          &larr; Tornar a l'Inici
+          &larr; Volver al Inicio
         </span>
       </div>
     </div>
@@ -88,16 +88,16 @@ export default function CitizenStatus({ onBack }) {
 }
 
 function StatusItem({ label, val }) {
-    let statusText = "Pendent de revisió";
+    let statusText = "Pendiente de revisión";
     let color = "#718096";
     let icon = "⏳";
 
     if (val === 1) {
-        statusText = "Validat per facultatiu";
+        statusText = "Validado por facultativo";
         color = "#48bb78";
         icon = "✅";
     } else if (val === -1) {
-        statusText = "Revisat (Previsió Rebutjada)";
+        statusText = "Revisado (Previsión Rechazada)";
         color = "#f56565";
         icon = "🩺";
     }

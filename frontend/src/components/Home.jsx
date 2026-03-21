@@ -54,12 +54,12 @@ export default function Home({ onNavigate }) {
               <path d="M12 8h.01"/>
             </svg>
           </div>
-          <h2>Consulta d'Estat (Ticket)</h2>
+          <h2>Consulta de Estado (Ticket)</h2>
           <p>
-            Vegi l'estat de les seves peticions generades. Introduint el seu identificador de ticket, podrà comprovar si la nostra IA i els metges han revisat el seu cas.
+            Vea el estado de sus peticiones generadas. Introduciendo su identificador de ticket, podrá comprobar si nuestra IA y los médicos han revisado su caso.
           </p>
           <button onClick={() => onNavigate('citizen_status')}>
-            Comprovar Estat
+            Comprobar Estado
           </button>
         </div>
       </section>
@@ -86,9 +86,7 @@ export default function Home({ onNavigate }) {
           </ul>
         </div>
         <div className="info-visual">
-          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2v20M2 12h20M7 7l10 10M17 7L7 17"/>
-          </svg>
+          {/* Logo removido para consistencia visual */}
         </div>
       </section>
     </div>

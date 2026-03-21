@@ -35,16 +35,16 @@ export default function ResultPanel({ data }) {
 
       {predictions.mortalidad_riesgo_anual !== undefined && (
         <>
-          <p className="section-label">Predicciones Proyectadas (Motor Árboles)</p>
+          <p className="section-label">Predicciones Clínicas (Modelos ML)</p>
           <div className="timeline">
              <div className="timeline-node">
                 <span className="timeline-pct">{predictions.visitas_urgencias_estimadas_mes}</span>
-                <span className="timeline-yr">Urgencias/Mes</span>
+                <span className="timeline-yr">Urgencias / Mes</span>
                 <div className={`timeline-bar timeline-bar--${predictions.visitas_urgencias_estimadas_mes > 0.15 ? 'med' : 'low'}`} />
              </div>
              <div className="timeline-node">
                 <span className="timeline-pct">{predictions.probabilidad_perfil_pcc}%</span>
-                <span className="timeline-yr">Probabilidad PCC</span>
+                <span className="timeline-yr">Perfil PCC</span>
                 <div className={`timeline-bar timeline-bar--${predictions.probabilidad_perfil_pcc > 50 ? 'high' : 'low'}`} />
              </div>
           </div>
@@ -53,11 +53,11 @@ export default function ResultPanel({ data }) {
 
       {isFullAnalyze && medical_data && (
         <>
-          <p className="section-label">Fisiopatología Detectada (LLM Extraction)</p>
+          <p className="section-label">Fisiopatología Detectada (Extracción LLM)</p>
           <div className="factors-grid">
             {Object.entries(medical_data).map(([key, value], i) => {
               // Solo mostrar campos con valor relevante
-              if (value === 0 || value === 'No' || value === 'No indicado') return null
+              if (value === 0 || value === 'No' || value === 'No indicado' || value === 'Desconocido') return null
               return (
                 <div key={i} className="factor-card">
                   <span className="factor-name">{key.replace(/_/g, ' ')}</span>
@@ -71,7 +71,7 @@ export default function ResultPanel({ data }) {
 
       {narrative && (
         <>
-          <p className="section-label">Evaluación Médica (IA Summarizer)</p>
+          <p className="section-label">Análisis Narrativo (Generado por IA)</p>
           <div className="analysis-box">
             {narrative.split('\n').filter(l => l.trim()).map((line, i) => (
               <p key={i}>{line}</p>
