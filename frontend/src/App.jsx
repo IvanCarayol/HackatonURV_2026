@@ -5,6 +5,7 @@ import DoctorDashboard from './components/DoctorDashboard'
 import FormInput from './components/FormInput'
 import ChatInput from './components/ChatInput'
 import ResultPanel from './components/ResultPanel'
+import CitizenStatus from './components/CitizenStatus'
 import './App.css'
 
 export default function App() {
@@ -60,6 +61,14 @@ export default function App() {
           doctorData={doctorInfo}
           onLogout={() => navigateTo('home')}
         />
+      </div>
+    )
+  }
+
+  if (view === 'citizen_status') {
+    return (
+      <div className="app">
+        <CitizenStatus onBack={() => navigateTo('home')} />
       </div>
     )
   }

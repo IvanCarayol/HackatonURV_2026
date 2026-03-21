@@ -44,6 +44,24 @@ export default function Home({ onNavigate }) {
             Empezar Consulta
           </button>
         </div>
+
+        <div className="home-card">
+          <div className="card-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <path d="M9 12h6"/>
+              <path d="M9 16h6"/>
+              <path d="M12 8h.01"/>
+            </svg>
+          </div>
+          <h2>Consulta d'Estat (Ticket)</h2>
+          <p>
+            Vegi l'estat de les seves peticions generades. Introduint el seu identificador de ticket, podrà comprovar si la nostra IA i els metges han revisat el seu cas.
+          </p>
+          <button onClick={() => onNavigate('citizen_status')}>
+            Comprovar Estat
+          </button>
+        </div>
       </section>
 
       <section className="info-section">

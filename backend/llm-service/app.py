@@ -326,6 +326,23 @@ async def analyze_full_case(request: ExtractionRequest):
         }
     }
 
+@app.get("/patients")
+async def list_patients_from_csv():
+    """Devuelve la lista completa de pacientes guardados en el historial."""
+    if not os.path.exists(QUERIED_CSV):
+        return []
+    
+    patients = []
+    try:
+        with open(QUERIED_CSV, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                patients.append(row)
+        return patients
+    except Exception as e:
+        logger.error(f"Error reading patients: {e}")
+        raise HTTPException(status_code=500, detail="Error de lectura")
+
 @app.get("/patient/{id}")
 async def get_patient_from_csv(id: str):
     """Busca un paciente en el histórico de consultas guardado en el CSV."""
@@ -348,13 +365,54 @@ async def get_patient_from_csv(id: str):
                         "farmacs_totals": row['farmacs_totals'],
                         "diags_totals": row['diags_totals'],
                         "visites_primaria": row['total_prim'],
-                        "visites_urgencies": 0 # No guardamos este campo exacto antes, ponemos 0 o derivamos
+                        "visites_urgencies": 0,
+                        "tratado_auditor": int(row.get('tratado_auditor', 0)),
+                        "tratado_previsor": int(row.get('tratado_previsor', 0)),
+                        "tratado_risc": int(row.get('tratado_risc', 0))
                     }
     except Exception as e:
         logger.error(f"Error reading CSV: {e}")
         raise HTTPException(status_code=500, detail="Error de lectura en la base de datos")
     
     raise HTTPException(status_code=404, detail="Paciente no encontrado en el histórico")
+
+@app.post("/validate/{id}")
+async def validate_patient_record(id: str, data: dict):
+    """Actualiza el estado de validación (1 o -1) en el CSV para una sección específica."""
+    section = data.get('section') # 'auditor', 'previsor', 'risc'
+    value = data.get('value')     # 1 o -1
+    
+    if section not in ['auditor', 'previsor', 'risc']:
+        raise HTTPException(status_code=400, detail="Sección de validación no válida")
+    
+    col_name = f"tratado_{section}"
+    updated = False
+    
+    if not os.path.exists(QUERIED_CSV):
+        raise HTTPException(status_code=404, detail="Archivo histórico no encontrado")
+        
+    rows = []
+    try:
+        with open(QUERIED_CSV, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            fieldnames = reader.fieldnames
+            for row in reader:
+                if row['id'] == id:
+                    row[col_name] = str(value)
+                    updated = True
+                rows.append(row)
+        
+        if updated:
+            with open(QUERIED_CSV, mode='w', encoding='utf-8', newline='') as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+            return {"status": "success", "id": id, "section": section, "value": value}
+    except Exception as e:
+        logger.error(f"Error updating validation: {e}")
+        raise HTTPException(status_code=500, detail="Error al actualizar la base de datos")
+        
+    raise HTTPException(status_code=404, detail="Paciente no encontrado para actualizar")
 
 @app.get("/predict/{id}")
 async def predict_patient_from_csv(id: str):

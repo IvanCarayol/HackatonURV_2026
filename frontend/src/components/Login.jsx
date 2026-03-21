@@ -10,7 +10,7 @@ export default function Login({ onLoginSuccess, onBack }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8080'
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
   function handleChange(e) {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -40,7 +40,8 @@ export default function Login({ onLoginSuccess, onBack }) {
       // Redirigir a vista.html al tener éxito
       window.location.href = '/vista.html'
     } catch (err) {
-      setError(err.message)
+      console.error("Login fetch error:", err)
+      setError("Error de conexión con el servidor. Verifica que el backend esté en el puerto 8080.")
     } finally {
       setLoading(false)
     }
