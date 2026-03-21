@@ -127,13 +127,36 @@ class DecisionTreesEngine:
         cols = self.feature_columns['pcc']
         return round(float(self.models['pcc'].predict_proba(df[cols])[0][1]) * 100, 2)
 
+def clean_int(val):
+    """
+    Asegura que el valor sea un entero. Maneja casos donde el LLM devuelve 
+    una lista de strings (ej: ["Insuficiencia cardíaca"]) o strings extraños.
+    """
+    if isinstance(val, list):
+        return len(val) # Interpretamos la lista de enfermedades como recuento
+    if isinstance(val, (int, float)):
+        return int(val)
+    if isinstance(val, str):
+        # Intentar convertir texto numérico
+        try:
+            return int(float(val))
+        except (ValueError, TypeError):
+            # Si es un texto no numérico pero no es negativo ("No", "None"),
+            # asumimos que es una descripción y cuenta como 1 ocurrencia.
+            clean_val = val.strip().lower()
+            if clean_val in ["no", "none", "no indicado", "no indicat", "0", "false"]:
+                return 0
+            return 1 # Si hay texto descriptivo, es que hay al menos 1 problema
+    return 0
+
 def map_llm_json_to_engine(llm_data):
     """
-    Traduce el JSON del LLM al formato que esperan los árboles.
+    Traduce el JSON del LLM al formato que esperan los árboles, 
+    limpiando tipos de datos inesperados.
     """
-    def get_grup_edat(edad):
+    def get_grup_edat(edad_input):
         try:
-            e = int(edad)
+            e = clean_int(edad_input)
             if e >= 90: return "90>"
             low = (e // 5) * 5
             return f"{low}-{low+4}"
@@ -143,22 +166,22 @@ def map_llm_json_to_engine(llm_data):
         "sexe": "H" if str(llm_data.get("Sexo", "")).lower() in ["varón", "hombre", "h", "varon"] else "D",
         "grup_edat": get_grup_edat(llm_data.get("Edad", 0)),
         "cronic": llm_data.get("Tipo_Cronico", "NO"),
-        "diags_totals": llm_data.get("Num_Diagnosticos", 0),
-        "farmacs_totals": llm_data.get("Total_Farmacos", 0),
-        "problemes_salut_aguts": llm_data.get("Problemes_aguts", 0),
-        "problemes_salut_cronics": llm_data.get("Problemes_cronics", 0),
-        "problemes_salut_neoplasia_maligna": llm_data.get("Neoplasia_maligna", 0),
-        "antiinfecciosos_per_a_us_sistemic": llm_data.get("Antiinfecciosos", 0),
-        "antineoplasics_i_immunomoduladors": llm_data.get("Quimioterapia_Inmunosupresores", 0),
-        "sang_i_organs_hematopoetics": llm_data.get("Sang_organs_hematopoetics", 0),
-        "sistema_cardiovascular": llm_data.get("Sistema_cardiovascular", 0),
-        "sistema_digestiu_i_metabolisme": llm_data.get("Sistema_digestiu_metabolisme", 0),
-        "sistema_musculoesqueletic": llm_data.get("Sistema_musculoesqueletic", 0),
-        "sistema_nervios": llm_data.get("Sistema_nervios", 0),
-        "sistema_respiratori": llm_data.get("Sistema_respiratori", 0),
-        "organs_dels_sentits": llm_data.get("Organs_sentits", 0),
-        "total_prim": llm_data.get("Visitas_Atencion_Primaria", 0),
-        "total_hosp": llm_data.get("Ingresos_Hospitalarios", 0)
+        "diags_totals": clean_int(llm_data.get("Num_Diagnosticos", 0)),
+        "farmacs_totals": clean_int(llm_data.get("Total_Farmacos", 0)),
+        "problemes_salut_aguts": clean_int(llm_data.get("Problemes_aguts", 0)),
+        "problemes_salut_cronics": clean_int(llm_data.get("Problemes_cronics", 0)),
+        "problemes_salut_neoplasia_maligna": clean_int(llm_data.get("Neoplasia_maligna", 0)),
+        "antiinfecciosos_per_a_us_sistemic": clean_int(llm_data.get("Antiinfecciosos", 0)),
+        "antineoplasics_i_immunomoduladors": clean_int(llm_data.get("Quimioterapia_Inmunosupresores", 0)),
+        "sang_i_organs_hematopoetics": clean_int(llm_data.get("Sang_organs_hematopoetics", 0)),
+        "sistema_cardiovascular": clean_int(llm_data.get("Sistema_cardiovascular", 0)),
+        "sistema_digestiu_i_metabolisme": clean_int(llm_data.get("Sistema_digestiu_metabolisme", 0)),
+        "sistema_musculoesqueletic": clean_int(llm_data.get("Sistema_musculoesqueletic", 0)),
+        "sistema_nervios": clean_int(llm_data.get("Sistema_nervios", 0)),
+        "sistema_respiratori": clean_int(llm_data.get("Sistema_respiratori", 0)),
+        "organs_dels_sentits": clean_int(llm_data.get("Organs_sentits", 0)),
+        "total_prim": clean_int(llm_data.get("Visitas_Atencion_Primaria", 0)),
+        "total_hosp": clean_int(llm_data.get("Ingresos_Hospitalarios", 0))
     }
     
     # Limpieza de Tipo_Cronico

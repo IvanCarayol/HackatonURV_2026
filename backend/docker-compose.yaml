@@ -9,12 +9,16 @@ services:
       - "11434:11434"
     volumes:
       - ollama_storage:/root/.ollama
+    labels:
+      - "nl.nodesource.gpu.index=1"
+    environment:
+      - CUDA_VISIBLE_DEVICES=1 # Forzamos a nivel de driver la gráfica 1
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              count: 1
+              device_ids: [ '1' ] # Especificamos explícitamente la GPU 1
               capabilities: [ gpu ]
     restart: unless-stopped
 
