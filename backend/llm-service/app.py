@@ -3,6 +3,8 @@ import json
 import logging
 import sys
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ollama import Client
 
@@ -19,6 +21,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Medical LLM Service", description="Mistral-7B via Ollama + Decision Trees")
+
+# CORS Support
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Configuration
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama-server:11434")
@@ -65,6 +75,125 @@ async def startup_event():
 class ExtractionRequest(BaseModel):
     text: str
 
+@app.get("/", response_class=HTMLResponse)
+async def get_frontend():
+    return """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>IA Médica - Dashboard Predictivo</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --primary: #4f46e5;
+                --bg: #f8fafc;
+                --card-bg: #ffffff;
+                --text: #1e293b;
+                --red: #ef4444;
+                --green: #22c55e;
+            }
+            body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text); padding: 40px; margin: 0; }
+            .container { max-width: 1000px; margin: 0 auto; }
+            h1 { font-weight: 600; color: var(--primary); font-size: 2.5rem; margin-bottom: 30px; }
+            .card { background: var(--card-bg); padding: 25px; border-radius: 16px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); margin-bottom: 25px; }
+            textarea { width: 100%; height: 120px; border: 2px solid #e2e8f0; border-radius: 12px; padding: 15px; font-size: 16px; box-sizing: border-box; font-family: inherit; }
+            button { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: 600; float: right; margin-top: 15px; transition: transform 0.2s; }
+            button:hover { transform: translateY(-2px); }
+            .results { display: none; margin-top: 80px; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+            .risk-card { text-align: center; border-radius: 12px; padding: 20px; color: white; }
+            .risk-value { font-size: 2rem; font-weight: 600; }
+            .report-box { border-left: 5px solid var(--primary); background: #eff6ff; padding: 20px; font-style: italic; line-height: 1.6; }
+            pre { background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 12px; overflow-x: auto; font-size: 14px; }
+            .loading { color: var(--primary); font-weight: 600; display: none; margin-top: 20px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🏥 Gestione de Pacientes IA</h1>
+            <div class="card">
+                <p>Describe el caso clínico del paciente para un análisis completo de riesgos 360°:</p>
+                <textarea id="inputText" placeholder="Varón de 89 años, crónico tipo MACA..."></textarea>
+                <button onclick="analyze()">Lanzar Análisis Predictivo</button>
+                <div id="loading" class="loading">⚙️ La inteligencia artificial está pensando... (aprox. 10s)</div>
+            </div>
+
+            <div id="results" class="results">
+                <h3>📊 Análisis Predictivo de Riesgos</h3>
+                <div class="grid">
+                    <div id="mortalityCard" class="risk-card">
+                        <div>Riesgo Mortalidad</div>
+                        <div id="mortalityVal" class="risk-value">0%</div>
+                    </div>
+                    <div id="visitasCard" class="risk-card">
+                        <div>Frecuentación Urgencias</div>
+                        <div id="visitasVal" class="risk-value">0</div>
+                    </div>
+                    <div id="pccCard" class="risk-card">
+                        <div>Perfil Crónico (PCC)</div>
+                        <div id="pccVal" class="risk-value">0%</div>
+                    </div>
+                </div>
+
+                <h3>🩺 Informe Clínico Narrativo</h3>
+                <div class="card report-box" id="reportText">Procesando...</div>
+
+                <h3>📑 Datos Médicos Estructurados (JSON)</h3>
+                <pre id="jsonResult">{}</pre>
+            </div>
+        </div>
+
+        <script>
+            async function analyze() {
+                const text = document.getElementById('inputText').value;
+                if (!text) return alert("Escribe algo por favor");
+                
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+
+                try {
+                    const res = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({text: text})
+                    });
+                    const data = await res.json();
+                    
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('results').style.display = 'block';
+                    
+                    // Actualizar Riesgos
+                    updateRisk('mortality', data.predictive_analysis.mortalidad_riesgo_anual, 40);
+                    updateRisk('visitas', data.predictive_analysis.visitas_urgencias_estimadas_mes, 0.5, true);
+                    updateRisk('pcc', data.predictive_analysis.probabilidad_perfil_pcc, 60);
+                    
+                    document.getElementById('visitasVal').innerText = data.predictive_analysis.visitas_urgencias_estimadas_mes;
+                    
+                    // Actualizar Informe
+                    document.getElementById('reportText').innerText = data.narrative_report;
+                    
+                    // Actualizar JSON
+                    document.getElementById('jsonResult').innerText = JSON.stringify(data.extracted_medical_data, null, 2);
+
+                } catch (e) {
+                    alert("Error conectando con el servidor");
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+
+            function updateRisk(id, val, threshold, isValue = false) {
+                const card = document.getElementById(id + 'Card');
+                const valElem = document.getElementById(id + 'Val');
+                valElem.innerText = isValue ? val : val + '%';
+                card.style.background = val > threshold ? '#ef4444' : '#22c55e';
+            }
+        </script>
+    </body>
+    </html>
+    """
+
 @app.get("/health")
 async def health():
     return {
@@ -75,7 +204,7 @@ async def health():
     }
 
 async def run_extraction(text: str):
-    """Lógica interna de extracción via Ollama"""
+    """Lógica entera de extracción via Ollama"""
     prompt = f"""<s>[INST] Eres un extractor de datos médicos profesional. 
     Analiza el texto y devuelve exclusivamente un objeto JSON con estos campos:
     {list(json_template.keys())}
@@ -105,7 +234,6 @@ async def run_report_generation(prediction_data: dict, medical_data: dict):
     """
     Genera un informe narrativo profesional basado en las predicciones.
     """
-    # Preparar el contexto para el reporte
     context = f"""
     DATOS CLÍNICOS:
     - Sexo: {medical_data.get('Sexo')}
@@ -135,23 +263,14 @@ async def run_report_generation(prediction_data: dict, medical_data: dict):
 
 @app.post("/report")
 async def report_only(prediction_data: dict, medical_data: dict = None):
-    """
-    Endpoint para generar solo el informe narrativo (Segunda fase del flujo encadenado).
-    """
     return {"report": await run_report_generation(prediction_data, medical_data or {})}
 
 @app.post("/predict")
 async def predict_only(medical_data: dict):
-    """
-    Segunda llamada: Recibe el JSON médico y devuelve las predicciones de los árboles.
-    """
     if not tree_engine.is_trained:
         raise HTTPException(status_code=503, detail="Decision trees engine is not yet trained")
-    
     try:
-        # 1. Mapear a formato de los árboles
         tree_input = map_llm_json_to_engine(medical_data)
-        # 2. Predicción en paralelo
         return await tree_engine.predict_async(tree_input)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
@@ -159,34 +278,19 @@ async def predict_only(medical_data: dict):
 
 @app.post("/analyze")
 async def analyze_full_case(request: ExtractionRequest):
-    """Extracción + Predicción con Árboles"""
-    # 1. Extraer JSON médico
     extracted_data = await run_extraction(request.text)
     if not extracted_data:
         raise HTTPException(status_code=500, detail="LLM Extraction failed")
 
-    # 2. Mapear a formato de los árboles
     try:
         tree_input = map_llm_json_to_engine(extracted_data)
-        logger.info(f"Mapped tree input: {tree_input}")
-    except Exception as e:
-        logger.error(f"Mapping error: {e}")
-        raise HTTPException(status_code=500, detail=f"Data mapping failed: {e}")
-
-    # 3. Predicciones
-    if not tree_engine.is_trained:
-        raise HTTPException(status_code=503, detail="Decision trees engine is not yet trained")
-    
-    try:
         analysis_results = await tree_engine.predict_async(tree_input)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
 
-    # 4. Generar Informe Narrativo (IA Voice)
     narrative_report = await run_report_generation(analysis_results, extracted_data)
 
-    # 5. Resultado final combinado
     return {
         "extracted_medical_data": extracted_data,
         "predictive_analysis": analysis_results,
